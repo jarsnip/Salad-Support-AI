@@ -14,6 +14,7 @@ class SpamFilter {
     this.userActivity = new Map(); // userId -> { threads: [], violations: [], lastThreadTime }
     this.messageHashes = new Map(); // messageHash -> { userId, timestamp }
     this.bannedUsers = new Map(); // userId -> { until: timestamp, reason }
+    this.blacklist = new Map(); // userId -> { username, reason, blockedBy, timestamp }
     this.spamEvents = []; // Log spam attempts
     this.maxSpamEvents = 100;
 
@@ -29,6 +30,13 @@ class SpamFilter {
     // Check if user has bypass role
     if (this.hasBypassRole(guildMember)) {
       return { allowed: true, reason: 'bypass_role' };
+    }
+
+    // Check if user is blacklisted (permanent block)
+    const blacklistCheck = this.checkBlacklist(userId);
+    if (!blacklistCheck.allowed) {
+      this.logSpamEvent(userId, username, content, 'blacklisted');
+      return blacklistCheck;
     }
 
     // Check if user is banned
@@ -82,6 +90,22 @@ class SpamFilter {
         role.name.toLowerCase().includes(bypassRole.toLowerCase())
       )
     );
+  }
+
+  checkBlacklist(userId) {
+    const blacklisted = this.blacklist.get(userId);
+    if (!blacklisted) return { allowed: true };
+
+    return {
+      allowed: false,
+      reason: 'blacklisted',
+      message: '🚫 You are blacklisted from creating support threads.',
+      details: {
+        blockedBy: blacklisted.blockedBy,
+        reason: blacklisted.reason,
+        timestamp: blacklisted.timestamp
+      }
+    };
   }
 
   checkBan(userId) {
@@ -161,16 +185,6 @@ class SpamFilter {
   }
 
   checkContent(content) {
-    // Check if message is too short
-    if (content.trim().length < 10) {
-      return {
-        allowed: false,
-        reason: 'too_short',
-        message: '📝 Please provide more details about your issue (at least 10 characters).',
-        details: { length: content.trim().length }
-      };
-    }
-
     // Check for excessive links
     const urlCount = (content.match(/https?:\/\//gi) || []).length;
     if (urlCount > 3) {
@@ -261,6 +275,49 @@ class SpamFilter {
     return wasBlocked;
   }
 
+  addToBlacklist(userId, username, reason, blockedBy) {
+    this.blacklist.set(userId, {
+      username,
+      reason: reason || 'No reason provided',
+      blockedBy,
+      timestamp: Date.now()
+    });
+
+    this.logSpamEvent(userId, username, '', 'blacklisted', {
+      reason,
+      blockedBy
+    });
+
+    console.log(`🚫 User ${username} (${userId}) added to blacklist by ${blockedBy}`);
+    return true;
+  }
+
+  removeFromBlacklist(userId) {
+    const wasBlacklisted = this.blacklist.delete(userId);
+    if (wasBlacklisted) {
+      console.log(`✅ User ${userId} removed from blacklist`);
+    }
+    return wasBlacklisted;
+  }
+
+  getBlacklist() {
+    const blacklisted = [];
+    for (const [userId, data] of this.blacklist.entries()) {
+      blacklisted.push({
+        userId,
+        username: data.username,
+        reason: data.reason,
+        blockedBy: data.blockedBy,
+        timestamp: data.timestamp
+      });
+    }
+    return blacklisted.sort((a, b) => b.timestamp - a.timestamp);
+  }
+
+  isBlacklisted(userId) {
+    return this.blacklist.has(userId);
+  }
+
   getUserActivity(userId) {
     if (!this.userActivity.has(userId)) {
       this.userActivity.set(userId, {
@@ -315,6 +372,7 @@ class SpamFilter {
     return {
       totalSpamEvents: this.spamEvents.length,
       bannedUsers: this.getBannedUsers().length,
+      blacklistedUsers: this.blacklist.size,
       trackedUsers: this.userActivity.size
     };
   }

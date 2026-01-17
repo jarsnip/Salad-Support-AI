@@ -267,6 +267,49 @@
             font-style: italic;
         }
 
+        .blacklist-item {
+            background: #fff0f0;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+        }
+
+        .blacklist-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .blacklist-username {
+            font-weight: bold;
+            color: #dc3545;
+            font-size: 1.1em;
+        }
+
+        .blacklist-badge {
+            background: #dc3545;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .blacklist-info {
+            margin-top: 8px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .blacklist-reason {
+            margin-top: 5px;
+            font-style: italic;
+            color: #721c24;
+        }
+
         .status-indicator {
             display: inline-block;
             width: 12px;
@@ -368,7 +411,11 @@
             </div>
             <div class="stat-card">
                 <div class="stat-value" id="bannedCount">0</div>
-                <div class="stat-label">Banned Users</div>
+                <div class="stat-label">Temp Banned</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="blacklistCount">0</div>
+                <div class="stat-label">Blacklisted</div>
             </div>
         </div>
 
@@ -401,6 +448,13 @@
                 <div class="empty-state">No spam detected</div>
             </div>
         </div>
+
+        <div class="panel">
+            <h2>🔨 Blacklisted Users</h2>
+            <div id="blacklist">
+                <div class="empty-state">No blacklisted users</div>
+            </div>
+        </div>
     </div>
 
     <button class="auto-scroll-toggle" id="autoScrollToggle">Auto-scroll: ON</button>
@@ -416,6 +470,7 @@
         const errorsDiv = document.getElementById('errors');
         const feedbackDiv = document.getElementById('feedback');
         const spamDiv = document.getElementById('spam');
+        const blacklistDiv = document.getElementById('blacklist');
         const autoScrollToggle = document.getElementById('autoScrollToggle');
 
         function connect() {
@@ -457,6 +512,7 @@
                     updateErrors(message.data.errors);
                     updateFeedback(message.data.feedback);
                     updateSpam(message.data.spam);
+                    updateBlacklist(message.data.blacklist);
                     break;
                 case 'messageProcessed':
                 case 'conversationCreated':
@@ -474,6 +530,7 @@
                 case 'spamDetected':
                     fetchSpam();
                     fetchStats();
+                    fetchBlacklist();
                     break;
             }
         }
@@ -485,6 +542,7 @@
             document.getElementById('feedbackCount').textContent = stats.feedback || 0;
             document.getElementById('spamCount').textContent = stats.spam || 0;
             document.getElementById('bannedCount').textContent = stats.banned || 0;
+            document.getElementById('blacklistCount').textContent = stats.blacklisted || 0;
         }
 
         function updateConversations(conversations) {
@@ -573,6 +631,28 @@
             `).join('');
         }
 
+        function updateBlacklist(blacklist) {
+            if (!blacklist || blacklist.length === 0) {
+                blacklistDiv.innerHTML = '<div class="empty-state">No blacklisted users</div>';
+                return;
+            }
+
+            blacklistDiv.innerHTML = blacklist.map(bl => `
+                <div class="blacklist-item">
+                    <div class="blacklist-header">
+                        <span class="blacklist-username">🔨 ${escapeHtml(bl.username)}</span>
+                        <span class="blacklist-badge">BLOCKED</span>
+                    </div>
+                    <div class="blacklist-info">
+                        <div style="color: #999; font-size: 0.85em;">
+                            Blocked by ${escapeHtml(bl.blockedBy)} • ${formatTime(bl.timestamp)}
+                        </div>
+                        <div class="blacklist-reason">Reason: ${escapeHtml(bl.reason)}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
         function toggleMessages(threadId) {
             const messagesDiv = document.getElementById(`messages-${threadId}`);
             if (messagesDiv) {
@@ -608,6 +688,12 @@
             const response = await fetch('/api/spam');
             const spam = await response.json();
             updateSpam(spam);
+        }
+
+        async function fetchBlacklist() {
+            const response = await fetch('/api/blacklist');
+            const blacklist = await response.json();
+            updateBlacklist(blacklist);
         }
 
         function formatTime(timestamp) {

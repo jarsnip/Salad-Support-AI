@@ -14,7 +14,8 @@ An intelligent Discord support bot powered by Claude AI that automatically handl
 - **Auto-cleanup**: Removes old conversation data to manage memory
 - **Advanced Spam Protection**: Multi-layer spam detection with rate limiting, cooldowns, and content analysis
 - **Auto-ban System**: Automatically bans users after repeated violations
-- **Live Dashboard**: Real-time web dashboard to monitor conversations, errors, feedback, and spam
+- **Moderator Tools**: `/block` and `/unblock` commands for permanent user blacklisting
+- **Live Dashboard**: Real-time web dashboard to monitor conversations, errors, feedback, spam, and blacklists
 - **User Tracking**: Dashboard shows which user started each conversation
 - **Feedback System**: `/end` command that locks threads and collects user feedback with reactions
 - **Real-time Updates**: WebSocket-powered dashboard with live statistics and conversation tracking
@@ -155,9 +156,10 @@ The bot includes a real-time web dashboard that provides:
 - **Live Conversation Monitoring**: See all active support threads with message counts and timestamps
 - **Error Tracking**: View recent errors with stack traces
 - **Feedback Analytics**: Track user satisfaction with thumbs up/down reactions
-- **Spam Detection Log**: View all spam attempts with usernames, reasons, and timestamps
-- **Banned Users List**: See currently banned users and ban durations
-- **Real-time Statistics**: Active conversations, total messages, errors, feedback, spam blocks, and banned users
+- **Spam Detection Log**: View all spam attempts with usernames, reasons, and timestamps (live updates)
+- **Banned Users List**: See currently temp-banned users and remaining time
+- **Blacklisted Users Panel**: View permanently blocked users with reasons and moderator info
+- **Real-time Statistics**: Active conversations, messages, errors, feedback, spam blocks, temp bans, and blacklisted users
 - **Auto-refresh**: WebSocket-powered live updates without page reloads
 
 ### Dashboard Features
@@ -179,6 +181,44 @@ Users or moderators can end a support conversation using the `/end` slash comman
 
 This helps track resolution rates and gather user satisfaction data.
 
+## Moderator Tools
+
+The bot includes powerful moderation commands for server administrators and moderators:
+
+### `/block <user> [reason]`
+
+Permanently blacklists a user from creating support threads.
+
+- **Usage:** `/block @username Reason for blocking`
+- **Permissions Required:** Moderate Members or Administrator
+- **Response:** User receives: "🚫 You are blacklisted from creating support threads."
+- **Dashboard:** Appears in the Blacklisted Users panel with reason and moderator name
+
+**Example:**
+```
+/block @Spammer Repeated spam attempts
+```
+
+### `/unblock <user>`
+
+Removes a user from the blacklist, allowing them to create support threads again.
+
+- **Usage:** `/unblock @username`
+- **Permissions Required:** Moderate Members or Administrator
+- **Response:** Confirmation message that user has been unblocked
+
+**Example:**
+```
+/unblock @Spammer
+```
+
+### Blacklist Features
+
+- **Permanent Blocking**: Unlike temporary bans, blacklisted users remain blocked until manually unblocked
+- **Audit Trail**: Dashboard shows who blocked each user, when, and why
+- **Separate from Auto-bans**: Manual blocks are independent of automatic spam detection
+- **Moderator-only**: Only users with Moderate Members or Administrator permissions can use these commands
+
 ## Spam Protection
 
 The bot includes comprehensive spam protection to prevent abuse:
@@ -189,7 +229,6 @@ The bot includes comprehensive spam protection to prevent abuse:
 - **Cooldown Period**: Minimum time between thread creations (default: 2 minutes)
 - **Duplicate Detection**: Prevents users from sending the same message repeatedly
 - **Content Filters**:
-  - Rejects messages that are too short (< 10 characters)
   - Blocks messages with excessive links (> 3 URLs)
   - Filters excessive caps lock usage
   - Detects repeated character spam
@@ -202,9 +241,9 @@ The bot includes comprehensive spam protection to prevent abuse:
 When spam is detected, users receive helpful messages:
 - Rate limit: "You've reached the limit of 3 support threads per 10 minutes. Please wait X minutes."
 - Cooldown: "Please wait X seconds before creating another support thread."
-- Too short: "Please provide more details about your issue (at least 10 characters)."
 - Duplicate: "You already sent this exact message recently. Please wait or provide more details."
-- Banned: "You are temporarily banned from creating support threads. Time remaining: X minutes."
+- Temp banned: "You are temporarily banned from creating support threads. Time remaining: X minutes."
+- Blacklisted: "You are blacklisted from creating support threads."
 
 ### Dashboard Integration
 

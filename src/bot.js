@@ -92,6 +92,23 @@ class SupportBot extends EventEmitter {
 
       console.log(`📌 Created thread: ${thread.name} (ID: ${thread.id})`);
 
+      // Set thread permissions: Only OP can send messages, others can only read
+      await thread.permissionOverwrites.edit(message.author.id, {
+        SendMessages: true,
+        ViewChannel: true
+      });
+
+      // Everyone else can view but not send (deny @everyone from sending)
+      await thread.permissionOverwrites.edit(thread.guild.roles.everyone, {
+        SendMessages: false,
+        ViewChannel: true
+      });
+
+      console.log(`🔒 Thread locked to original poster: ${message.author.tag}`);
+
+      // Track the original poster
+      this.conversationManager.setOriginalPoster(thread.id, message.author.id, message.author.username);
+
       await thread.send(`👋 Hi ${message.author}! I'm here to help with your support question. Let me look into that for you...`);
 
       this.messageQueue.add({
@@ -104,6 +121,7 @@ class SupportBot extends EventEmitter {
       this.emit('conversationCreated', {
         threadId: thread.id,
         username: message.author.username,
+        userId: message.author.id,
         initialMessage: message.content,
         timestamp: Date.now()
       });
@@ -124,6 +142,16 @@ class SupportBot extends EventEmitter {
       const parentChannel = message.channel.parent;
 
       if (!parentChannel || parentChannel.id !== this.config.supportChannelId) {
+        return;
+      }
+
+      // Check if the user is the original poster
+      const originalPosterId = this.conversationManager.getOriginalPosterId(message.channel.id);
+
+      if (originalPosterId && message.author.id !== originalPosterId) {
+        console.log(`⚠️ Ignoring message from non-OP user ${message.author.tag} in thread ${message.channel.id}`);
+        // Optionally send an ephemeral message (but Discord doesn't support this in threads easily)
+        // Just silently ignore non-OP messages as failsafe
         return;
       }
 

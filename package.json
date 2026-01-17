@@ -1,0 +1,19 @@
+{
+  "name": "salad-support-ai",
+  "version": "1.0.0",
+  "description": "Discord support bot with AI-powered responses using support documentation",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js"
+  },
+  "keywords": ["discord", "bot", "support", "ai", "claude"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "@anthropic-ai/sdk": "^0.32.1",
+    "dotenv": "^16.4.5"
+  }
+}

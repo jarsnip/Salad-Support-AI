@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node analyze-tokens.js:*)",
+      "Bash(node test-url-mapping.js:*)",
+      "Bash(node fix-links.js:*)"
+    ]
+  }
+}

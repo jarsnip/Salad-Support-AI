@@ -1,0 +1,29 @@
+{
+  "title": "Your PC",
+  "icon": "MyIcon",
+  "pages": [
+    "how-to-find-your-gpu-or-cpu",
+    "how-to-enable-compute-mode-on-amd-drivers",
+    "how-to-update-my-nvidia-drivers",
+    "how-to-update-my-amd-drivers",
+    "how-to-reinstall-gpu-drivers",
+    "how-to-create-a-har-file",
+    "how-to-create-a-support-ticket",
+    "how-to-check-if-your-salad-installer-is-safe",
+    "how-to-enable-virtualization-support-on-your-machine",
+    "enable-virtualization-on-hp-pcs",
+    "identifying-your-cpu",
+    "enable-virtualization-on-lenovo-pcs",
+    "enable-virtualization-on-acer-pcs",
+    "enable-virtualization-on-asus-pcs",
+    "enable-virtualization-on-dell-pcs",
+    "enable-virtualization-by-motherboard-msi-american-megatrends",
+    "identifying-your-motherboard",
+    "enable-virtualization-by-motherboard-gigabyte",
+    "how-to-update-the-wsl-kernel-on-your-machine",
+    "how-to-save-network-requests-har-file",
+    "improve-internet-speed-container-jobs",
+    "how-to-disable-ecc",
+    "how-to-update-your-intel-drivers"
+  ]
+}

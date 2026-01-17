@@ -1,0 +1,26 @@
+{
+  "title": "Jobs",
+  "icon": "MyIcon",
+  "pages": [
+    "why-do-i-earn-less-more-with-salad-than-whattomine",
+    "how-much-can-i-earn-with-salad",
+    "how-can-i-earn-more-with-salad",
+    "how-often-do-i-earn-with-salad",
+    "why-is-my-earning-rate-sporadic-random",
+    "what-is-my-machine-actually-mining",
+    "should-i-enable-my-gpu-my-cpu-or-both",
+    "what-is-bandwidth-sharing",
+    "what-is-wsl",
+    "how-do-i-get-container-jobs",
+    "how-does-my-machine-earn-salad-balance",
+    "pc-power-limiting-faq",
+    "how-to-make-salad-retry-jobs",
+    "can-you-restart-or-retry-failed-jobs-on-salad",
+    "how-does-reallocation-work-on-salad",
+    "what-are-batch-jobs",
+    "why-am-i-not-receiving-any-jobs",
+    "why-do-jobs-keep-failing-or-restarting",
+    "why-do-my-earnings-look-different-than-the-network-monitor",
+    "will-installing-updates-lose-my-jobs"
+  ]
+}

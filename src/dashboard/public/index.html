@@ -226,6 +226,47 @@
             font-size: 0.85em;
         }
 
+        .spam-item {
+            background: #ffe6e6;
+            border-left: 4px solid #ff6b6b;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+        }
+
+        .spam-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .spam-username {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .spam-reason {
+            background: #ff6b6b;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            text-transform: uppercase;
+        }
+
+        .spam-time {
+            color: #999;
+            font-size: 0.85em;
+            margin-bottom: 5px;
+        }
+
+        .spam-message {
+            font-size: 0.9em;
+            color: #666;
+            font-style: italic;
+        }
+
         .status-indicator {
             display: inline-block;
             width: 12px;
@@ -321,6 +362,14 @@
                 <div class="stat-value" id="feedbackCount">0</div>
                 <div class="stat-label">Feedback Received</div>
             </div>
+            <div class="stat-card">
+                <div class="stat-value" id="spamCount">0</div>
+                <div class="stat-label">Spam Blocked</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="bannedCount">0</div>
+                <div class="stat-label">Banned Users</div>
+            </div>
         </div>
 
         <div class="content-grid">
@@ -345,6 +394,13 @@
                 <div class="empty-state">No feedback yet</div>
             </div>
         </div>
+
+        <div class="panel">
+            <h2>🚫 Spam Detection</h2>
+            <div id="spam">
+                <div class="empty-state">No spam detected</div>
+            </div>
+        </div>
     </div>
 
     <button class="auto-scroll-toggle" id="autoScrollToggle">Auto-scroll: ON</button>
@@ -359,6 +415,7 @@
         const conversationsDiv = document.getElementById('conversations');
         const errorsDiv = document.getElementById('errors');
         const feedbackDiv = document.getElementById('feedback');
+        const spamDiv = document.getElementById('spam');
         const autoScrollToggle = document.getElementById('autoScrollToggle');
 
         function connect() {
@@ -399,6 +456,7 @@
                     updateConversations(message.data.conversations);
                     updateErrors(message.data.errors);
                     updateFeedback(message.data.feedback);
+                    updateSpam(message.data.spam);
                     break;
                 case 'messageProcessed':
                 case 'conversationCreated':
@@ -413,6 +471,10 @@
                     fetchFeedback();
                     fetchStats();
                     break;
+                case 'spamDetected':
+                    fetchSpam();
+                    fetchStats();
+                    break;
             }
         }
 
@@ -421,6 +483,8 @@
             document.getElementById('totalMessages').textContent = stats.totalMessages || 0;
             document.getElementById('errorCount').textContent = stats.errors || 0;
             document.getElementById('feedbackCount').textContent = stats.feedback || 0;
+            document.getElementById('spamCount').textContent = stats.spam || 0;
+            document.getElementById('bannedCount').textContent = stats.banned || 0;
         }
 
         function updateConversations(conversations) {
@@ -491,6 +555,24 @@
             `).join('');
         }
 
+        function updateSpam(spam) {
+            if (!spam || spam.length === 0) {
+                spamDiv.innerHTML = '<div class="empty-state">No spam detected</div>';
+                return;
+            }
+
+            spamDiv.innerHTML = spam.slice(-20).map(sp => `
+                <div class="spam-item">
+                    <div class="spam-header">
+                        <span class="spam-username">${escapeHtml(sp.username)}</span>
+                        <span class="spam-reason">${sp.reason.replace(/_/g, ' ')}</span>
+                    </div>
+                    <div class="spam-time">${formatTime(sp.timestamp)}</div>
+                    ${sp.content ? `<div class="spam-message">"${escapeHtml(sp.content)}"</div>` : ''}
+                </div>
+            `).join('');
+        }
+
         function toggleMessages(threadId) {
             const messagesDiv = document.getElementById(`messages-${threadId}`);
             if (messagesDiv) {
@@ -520,6 +602,12 @@
             const response = await fetch('/api/feedback');
             const feedback = await response.json();
             updateFeedback(feedback);
+        }
+
+        async function fetchSpam() {
+            const response = await fetch('/api/spam');
+            const spam = await response.json();
+            updateSpam(spam);
         }
 
         function formatTime(timestamp) {

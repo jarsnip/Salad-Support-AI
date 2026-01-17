@@ -4,6 +4,7 @@ import AIService from './services/aiService.js';
 import ConversationManager from './utils/conversationManager.js';
 import MessageQueue from './utils/messageQueue.js';
 import docsManager from './utils/docsManager.js';
+import SpamFilter from './utils/spamFilter.js';
 
 class SupportBot extends EventEmitter {
   constructor(config) {
@@ -20,6 +21,7 @@ class SupportBot extends EventEmitter {
 
     this.aiService = new AIService(config.anthropicApiKey, config.aiModel);
     this.conversationManager = new ConversationManager(config.maxConversationHistory);
+    this.spamFilter = new SpamFilter(config.spamFilter);
 
     this.messageQueue = new MessageQueue(
       this.processMessage.bind(this),
@@ -84,6 +86,31 @@ class SupportBot extends EventEmitter {
     try {
       console.log(`\n📩 New support message from ${message.author.tag}: "${message.content.substring(0, 50)}..."`);
 
+      // Check spam filter
+      const spamCheck = await this.spamFilter.checkUser(
+        message.author.id,
+        message.author.username,
+        message.content,
+        message.member
+      );
+
+      if (!spamCheck.allowed) {
+        console.log(`🚫 Spam detected from ${message.author.tag}: ${spamCheck.reason}`);
+
+        // Emit spam event for dashboard
+        this.emit('spamDetected', {
+          userId: message.author.id,
+          username: message.author.tag,
+          reason: spamCheck.reason,
+          message: message.content.substring(0, 100),
+          timestamp: Date.now()
+        });
+
+        // Send user-friendly message
+        await message.reply(spamCheck.message);
+        return;
+      }
+
       const thread = await message.startThread({
         name: `Support: ${message.author.username}`,
         autoArchiveDuration: 60,
@@ -108,6 +135,10 @@ class SupportBot extends EventEmitter {
 
       // Track the original poster
       this.conversationManager.setOriginalPoster(thread.id, message.author.id, message.author.username);
+
+      // Record thread creation in spam filter
+      this.spamFilter.recordThread(message.author.id);
+      this.spamFilter.recordMessage(message.author.id, message.content);
 
       await thread.send(`👋 Hi ${message.author}! I'm here to help with your support question. Let me look into that for you...`);
 

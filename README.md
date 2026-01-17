@@ -5,13 +5,15 @@ An intelligent Discord support bot powered by Claude AI that automatically handl
 ## Features
 
 - **Automatic Thread Creation**: Creates a dedicated thread for each support message in the designated channel
+- **Private Thread Permissions**: Each thread is locked to the original poster - only they can send messages, others can read
 - **AI-Powered Responses**: Uses Claude AI to provide intelligent, context-aware responses
 - **Support Documentation Bank**: Loads and uses markdown documentation files to answer questions accurately
 - **Conversation Memory**: Maintains conversation history within each thread for contextual responses
 - **Message Queueing**: Handles multiple concurrent requests efficiently (configurable concurrency limit)
-- **Multiple Messages Support**: Processes multiple messages in the same thread seamlessly
+- **Single-User Focus**: Bot only responds to the original poster as a failsafe, preventing confusion
 - **Auto-cleanup**: Removes old conversation data to manage memory
 - **Live Dashboard**: Real-time web dashboard to monitor conversations, errors, and feedback
+- **User Tracking**: Dashboard shows which user started each conversation
 - **Feedback System**: `/end` command that locks threads and collects user feedback with reactions
 - **Real-time Updates**: WebSocket-powered dashboard with live statistics and conversation tracking
 
@@ -79,7 +81,9 @@ An intelligent Discord support bot powered by Claude AI that automatically handl
    - Send Messages
    - Send Messages in Threads
    - Create Public Threads
+   - Manage Threads (required to set thread permissions)
    - Read Message History
+   - Add Reactions (for feedback system)
 
 4. **Enable Required Intents**
 
@@ -169,9 +173,11 @@ This helps track resolution rates and gather user satisfaction data.
 
 1. **User posts in support channel**: When a user posts a message in the designated support channel, the bot automatically creates a thread
 2. **Thread creation**: A new thread is created with the title "Support: [username]"
-3. **AI processes the request**: The bot uses Claude AI with the loaded documentation to generate a helpful response
-4. **Conversation continues**: Users can continue asking questions in the thread, and the bot maintains context
-5. **Multiple messages**: The bot can handle multiple messages from different users simultaneously using a queue system
+3. **Thread permissions**: The thread is locked so only the original poster can send messages (others can read). This ensures 1-on-1 support conversations
+4. **AI processes the request**: The bot uses Claude AI with the loaded documentation to generate a helpful response
+5. **Conversation continues**: The user can continue asking questions in the thread, and the bot maintains context
+6. **Multiple threads**: The bot can handle multiple support threads simultaneously using a queue system
+7. **Failsafe validation**: As an additional safeguard, the bot only responds to messages from the original poster
 
 ## Configuration Options
 

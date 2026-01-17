@@ -435,8 +435,13 @@
                         <span class="thread-id">Thread: ${conv.threadId}</span>
                         <span class="message-count">${conv.messageCount} messages</span>
                     </div>
-                    <div class="conversation-time">
-                        Last activity: ${formatTime(conv.lastActivity)}
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px;">
+                        <div style="color: #667eea; font-weight: 500; font-size: 0.9em;">
+                            👤 ${escapeHtml(conv.originalPoster)}
+                        </div>
+                        <div class="conversation-time">
+                            ${formatTime(conv.lastActivity)}
+                        </div>
                     </div>
                     <div id="messages-${conv.threadId}" style="display: none; margin-top: 15px;">
                         ${conv.messages.map(msg => `

@@ -131,6 +131,8 @@ export class DashboardServer {
         messageCount: conversation.messages.length,
         createdAt: conversation.createdAt,
         lastActivity: conversation.lastActivity,
+        originalPoster: conversation.originalPosterUsername || 'Unknown',
+        originalPosterId: conversation.originalPosterId,
         messages: conversation.messages.slice(-10) // Last 10 messages
       });
     }

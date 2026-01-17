@@ -12,7 +12,9 @@ An intelligent Discord support bot powered by Claude AI that automatically handl
 - **Message Queueing**: Handles multiple concurrent requests efficiently (configurable concurrency limit)
 - **Single-User Focus**: Bot only responds to the original poster as a failsafe, preventing confusion
 - **Auto-cleanup**: Removes old conversation data to manage memory
-- **Live Dashboard**: Real-time web dashboard to monitor conversations, errors, and feedback
+- **Advanced Spam Protection**: Multi-layer spam detection with rate limiting, cooldowns, and content analysis
+- **Auto-ban System**: Automatically bans users after repeated violations
+- **Live Dashboard**: Real-time web dashboard to monitor conversations, errors, feedback, and spam
 - **User Tracking**: Dashboard shows which user started each conversation
 - **Feedback System**: `/end` command that locks threads and collects user feedback with reactions
 - **Real-time Updates**: WebSocket-powered dashboard with live statistics and conversation tracking
@@ -50,6 +52,12 @@ An intelligent Discord support bot powered by Claude AI that automatically handl
    MAX_CONVERSATION_HISTORY=10
    BOT_NAME=Support Bot
    DASHBOARD_PORT=3000
+   SPAM_FILTER_ENABLED=true
+   SPAM_MAX_THREADS_PER_WINDOW=3
+   SPAM_TIME_WINDOW=600000
+   SPAM_COOLDOWN=120000
+   SPAM_AUTO_BAN_THRESHOLD=5
+   SPAM_BAN_DURATION=3600000
    ```
 
 4. **Register Discord slash commands**
@@ -147,7 +155,9 @@ The bot includes a real-time web dashboard that provides:
 - **Live Conversation Monitoring**: See all active support threads with message counts and timestamps
 - **Error Tracking**: View recent errors with stack traces
 - **Feedback Analytics**: Track user satisfaction with thumbs up/down reactions
-- **Real-time Statistics**: Active conversations, total messages, error count, and feedback count
+- **Spam Detection Log**: View all spam attempts with usernames, reasons, and timestamps
+- **Banned Users List**: See currently banned users and ban durations
+- **Real-time Statistics**: Active conversations, total messages, errors, feedback, spam blocks, and banned users
 - **Auto-refresh**: WebSocket-powered live updates without page reloads
 
 ### Dashboard Features
@@ -168,6 +178,41 @@ Users or moderators can end a support conversation using the `/end` slash comman
 5. Feedback is recorded in the dashboard
 
 This helps track resolution rates and gather user satisfaction data.
+
+## Spam Protection
+
+The bot includes comprehensive spam protection to prevent abuse:
+
+### Features
+
+- **Rate Limiting**: Users can only create a limited number of threads within a time window (default: 3 threads per 10 minutes)
+- **Cooldown Period**: Minimum time between thread creations (default: 2 minutes)
+- **Duplicate Detection**: Prevents users from sending the same message repeatedly
+- **Content Filters**:
+  - Rejects messages that are too short (< 10 characters)
+  - Blocks messages with excessive links (> 3 URLs)
+  - Filters excessive caps lock usage
+  - Detects repeated character spam
+- **Auto-ban System**: Users who violate spam rules repeatedly are automatically banned temporarily
+- **Admin Bypass**: Users with Administrator or Moderator roles bypass all spam filters
+- **Real-time Tracking**: All spam attempts are logged and visible in the dashboard
+
+### User Feedback
+
+When spam is detected, users receive helpful messages:
+- Rate limit: "You've reached the limit of 3 support threads per 10 minutes. Please wait X minutes."
+- Cooldown: "Please wait X seconds before creating another support thread."
+- Too short: "Please provide more details about your issue (at least 10 characters)."
+- Duplicate: "You already sent this exact message recently. Please wait or provide more details."
+- Banned: "You are temporarily banned from creating support threads. Time remaining: X minutes."
+
+### Dashboard Integration
+
+The dashboard displays:
+- Total spam attempts blocked
+- Number of currently banned users
+- Recent spam events with usernames, reasons, and timestamps
+- Real-time spam detection notifications
 
 ## How It Works
 
@@ -191,6 +236,12 @@ This helps track resolution rates and gather user satisfaction data.
 | `MAX_CONVERSATION_HISTORY` | Number of messages to keep in memory | `10` |
 | `BOT_NAME` | Name of the bot | `Support Bot` |
 | `DASHBOARD_PORT` | Port for the live dashboard web server | `3000` |
+| `SPAM_FILTER_ENABLED` | Enable/disable spam filtering | `true` |
+| `SPAM_MAX_THREADS_PER_WINDOW` | Max threads a user can create in time window | `3` |
+| `SPAM_TIME_WINDOW` | Time window for rate limiting (ms) | `600000` (10 min) |
+| `SPAM_COOLDOWN` | Cooldown between thread creations (ms) | `120000` (2 min) |
+| `SPAM_AUTO_BAN_THRESHOLD` | Violations before auto-ban | `5` |
+| `SPAM_BAN_DURATION` | Duration of auto-ban (ms) | `3600000` (1 hour) |
 
 ## Customizing the AI Behavior
 
@@ -210,6 +261,7 @@ buildSystemPrompt() {
 - **`src/utils/conversationManager.js`**: Manages conversation history and context
 - **`src/utils/docsManager.js`**: Loads and manages support documentation
 - **`src/utils/messageQueue.js`**: Handles concurrent message processing
+- **`src/utils/spamFilter.js`**: Spam detection, rate limiting, and auto-ban system
 - **`src/dashboard/server.js`**: Express server with WebSocket for live dashboard
 - **`src/dashboard/public/index.html`**: Dashboard web interface
 - **`src/registerCommands.js`**: Script to register Discord slash commands

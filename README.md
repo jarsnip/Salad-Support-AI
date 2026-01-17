@@ -11,6 +11,9 @@ An intelligent Discord support bot powered by Claude AI that automatically handl
 - **Message Queueing**: Handles multiple concurrent requests efficiently (configurable concurrency limit)
 - **Multiple Messages Support**: Processes multiple messages in the same thread seamlessly
 - **Auto-cleanup**: Removes old conversation data to manage memory
+- **Live Dashboard**: Real-time web dashboard to monitor conversations, errors, and feedback
+- **Feedback System**: `/end` command that locks threads and collects user feedback with reactions
+- **Real-time Updates**: WebSocket-powered dashboard with live statistics and conversation tracking
 
 ## Prerequisites
 
@@ -38,12 +41,20 @@ An intelligent Discord support bot powered by Claude AI that automatically handl
    Edit `.env` and fill in your credentials:
    ```env
    DISCORD_TOKEN=your_discord_bot_token_here
+   DISCORD_CLIENT_ID=your_discord_client_id_here
    SUPPORT_CHANNEL_ID=your_support_channel_id_here
    ANTHROPIC_API_KEY=your_anthropic_api_key_here
    AI_MODEL=claude-3-5-sonnet-20241022
    MAX_CONVERSATION_HISTORY=10
    BOT_NAME=Support Bot
+   DASHBOARD_PORT=3000
    ```
+
+4. **Register Discord slash commands**
+   ```bash
+   npm run register-commands
+   ```
+   This registers the `/end` command with Discord. You only need to do this once, or when you add new commands.
 
 ## Setting Up Your Discord Bot
 
@@ -52,7 +63,11 @@ An intelligent Discord support bot powered by Claude AI that automatically handl
    - Click "New Application"
    - Give it a name and create it
 
-2. **Create a Bot**
+2. **Get your Application Client ID**
+   - In the "General Information" section
+   - Copy the "Application ID" (this is your `DISCORD_CLIENT_ID`)
+
+3. **Create a Bot**
    - Go to the "Bot" section
    - Click "Add Bot"
    - Copy the token (this is your `DISCORD_TOKEN`)
@@ -116,6 +131,40 @@ npm run dev
 npm start
 ```
 
+The bot will start along with the live dashboard. Access the dashboard at:
+```
+http://localhost:3000
+```
+
+## Live Dashboard
+
+The bot includes a real-time web dashboard that provides:
+
+- **Live Conversation Monitoring**: See all active support threads with message counts and timestamps
+- **Error Tracking**: View recent errors with stack traces
+- **Feedback Analytics**: Track user satisfaction with thumbs up/down reactions
+- **Real-time Statistics**: Active conversations, total messages, error count, and feedback count
+- **Auto-refresh**: WebSocket-powered live updates without page reloads
+
+### Dashboard Features
+
+- Click on any conversation to expand and view recent messages
+- Auto-scroll toggle for error logs
+- Real-time connection status indicator
+- Responsive design for desktop and mobile
+
+## Using the /end Command
+
+Users or moderators can end a support conversation using the `/end` slash command:
+
+1. Type `/end` in any support thread
+2. The bot will prompt for feedback with reaction buttons (👍 or 👎)
+3. User clicks a reaction to provide feedback
+4. The thread is automatically locked and archived
+5. Feedback is recorded in the dashboard
+
+This helps track resolution rates and gather user satisfaction data.
+
 ## How It Works
 
 1. **User posts in support channel**: When a user posts a message in the designated support channel, the bot automatically creates a thread
@@ -129,11 +178,13 @@ npm start
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `DISCORD_TOKEN` | Your Discord bot token | Required |
+| `DISCORD_CLIENT_ID` | Your Discord application client ID | Required |
 | `SUPPORT_CHANNEL_ID` | Channel ID to monitor for support requests | Required |
 | `ANTHROPIC_API_KEY` | Your Anthropic API key | Required |
 | `AI_MODEL` | Claude model to use | `claude-3-5-sonnet-20241022` |
 | `MAX_CONVERSATION_HISTORY` | Number of messages to keep in memory | `10` |
 | `BOT_NAME` | Name of the bot | `Support Bot` |
+| `DASHBOARD_PORT` | Port for the live dashboard web server | `3000` |
 
 ## Customizing the AI Behavior
 
@@ -147,12 +198,15 @@ buildSystemPrompt() {
 
 ## Architecture
 
-- **`src/index.js`**: Entry point, loads configuration
-- **`src/bot.js`**: Main bot logic, event handlers
+- **`src/index.js`**: Entry point, loads configuration, starts bot and dashboard
+- **`src/bot.js`**: Main bot logic, event handlers, slash commands
 - **`src/services/aiService.js`**: Claude AI integration
 - **`src/utils/conversationManager.js`**: Manages conversation history and context
 - **`src/utils/docsManager.js`**: Loads and manages support documentation
 - **`src/utils/messageQueue.js`**: Handles concurrent message processing
+- **`src/dashboard/server.js`**: Express server with WebSocket for live dashboard
+- **`src/dashboard/public/index.html`**: Dashboard web interface
+- **`src/registerCommands.js`**: Script to register Discord slash commands
 - **`docs/`**: Support documentation files (markdown)
 
 ## Queue System

@@ -1,11 +1,13 @@
 import { Client, GatewayIntentBits, ChannelType, PermissionFlagsBits } from 'discord.js';
+import { EventEmitter } from 'events';
 import AIService from './services/aiService.js';
 import ConversationManager from './utils/conversationManager.js';
 import MessageQueue from './utils/messageQueue.js';
 import docsManager from './utils/docsManager.js';
 
-class SupportBot {
+class SupportBot extends EventEmitter {
   constructor(config) {
+    super();
     this.config = config;
     this.client = new Client({
       intents: [
@@ -61,6 +63,20 @@ class SupportBot {
 
     this.client.on('error', (error) => {
       console.error('Discord client error:', error);
+      this.emit('error', error);
+    });
+
+    this.client.on('interactionCreate', async (interaction) => {
+      try {
+        if (!interaction.isChatInputCommand()) return;
+
+        if (interaction.commandName === 'end') {
+          await this.handleEndCommand(interaction);
+        }
+      } catch (error) {
+        console.error('Error handling interaction:', error);
+        this.emit('error', error);
+      }
     });
   }
 
@@ -85,8 +101,16 @@ class SupportBot {
         username: message.author.username
       });
 
+      this.emit('conversationCreated', {
+        threadId: thread.id,
+        username: message.author.username,
+        initialMessage: message.content,
+        timestamp: Date.now()
+      });
+
     } catch (error) {
       console.error('Error handling support message:', error);
+      this.emit('error', error);
       try {
         await message.reply('Sorry, I encountered an error creating a support thread. Please try again.');
       } catch (replyError) {
@@ -156,8 +180,17 @@ class SupportBot {
 
       console.log(`✓ Sent AI response to thread ${threadId}`);
 
+      this.emit('messageProcessed', {
+        threadId,
+        username,
+        messageContent,
+        response: response.substring(0, 100),
+        timestamp: Date.now()
+      });
+
     } catch (error) {
       console.error('Error processing message:', error);
+      this.emit('error', error);
 
       try {
         const thread = await this.client.channels.fetch(threadId);
@@ -210,6 +243,89 @@ class SupportBot {
     }
 
     return chunks;
+  }
+
+  async handleEndCommand(interaction) {
+    try {
+      const channel = interaction.channel;
+
+      if (!channel.isThread()) {
+        await interaction.reply({
+          content: 'This command can only be used in support threads.',
+          ephemeral: true
+        });
+        return;
+      }
+
+      const parentChannel = channel.parent;
+      if (!parentChannel || parentChannel.id !== this.config.supportChannelId) {
+        await interaction.reply({
+          content: 'This command can only be used in support threads.',
+          ephemeral: true
+        });
+        return;
+      }
+
+      await interaction.reply({
+        content: '👋 Thank you for using our support! Please provide feedback by reacting to this message:\n👍 if your issue was resolved\n👎 if you need more help',
+        fetchReply: true
+      });
+
+      const replyMessage = await interaction.fetchReply();
+
+      await replyMessage.react('👍');
+      await replyMessage.react('👎');
+
+      const filter = (reaction, user) => {
+        return ['👍', '👎'].includes(reaction.emoji.name) && !user.bot;
+      };
+
+      const collector = replyMessage.createReactionCollector({
+        filter,
+        time: 60000,
+        max: 1
+      });
+
+      collector.on('collect', async (reaction, user) => {
+        const feedbackType = reaction.emoji.name === '👍' ? 'positive' : 'negative';
+
+        console.log(`📊 Feedback received: ${feedbackType} from ${user.tag} in thread ${channel.id}`);
+
+        this.emit('feedbackReceived', {
+          threadId: channel.id,
+          userId: user.id,
+          username: user.tag,
+          type: feedbackType,
+          timestamp: Date.now()
+        });
+
+        await channel.send(`Thank you for your feedback! ${feedbackType === 'positive' ? 'Glad we could help!' : 'A human agent will follow up with you shortly.'}`);
+
+        await channel.setLocked(true);
+        await channel.setArchived(true);
+
+        console.log(`🔒 Thread ${channel.id} has been locked and archived`);
+      });
+
+      collector.on('end', async (collected) => {
+        if (collected.size === 0) {
+          await channel.send('No feedback received. Thread will remain open.');
+        }
+      });
+
+    } catch (error) {
+      console.error('Error handling /end command:', error);
+      this.emit('error', error);
+
+      try {
+        await interaction.reply({
+          content: 'An error occurred while processing the command.',
+          ephemeral: true
+        });
+      } catch (replyError) {
+        console.error('Error sending error reply:', replyError);
+      }
+    }
   }
 
   async start() {

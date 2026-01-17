@@ -9,7 +9,15 @@ const config = {
   aiModel: process.env.AI_MODEL || 'claude-sonnet-4-20250514',
   maxConversationHistory: parseInt(process.env.MAX_CONVERSATION_HISTORY) || 10,
   botName: process.env.BOT_NAME || 'Support Bot',
-  dashboardPort: parseInt(process.env.DASHBOARD_PORT) || 3000
+  dashboardPort: parseInt(process.env.DASHBOARD_PORT) || 3000,
+  spamFilter: {
+    enabled: process.env.SPAM_FILTER_ENABLED !== 'false',
+    maxThreadsPerWindow: parseInt(process.env.SPAM_MAX_THREADS_PER_WINDOW) || 3,
+    timeWindow: parseInt(process.env.SPAM_TIME_WINDOW) || 600000, // 10 minutes
+    cooldownPeriod: parseInt(process.env.SPAM_COOLDOWN) || 120000, // 2 minutes
+    autoBanThreshold: parseInt(process.env.SPAM_AUTO_BAN_THRESHOLD) || 5,
+    banDuration: parseInt(process.env.SPAM_BAN_DURATION) || 3600000 // 1 hour
+  }
 };
 
 if (!config.discordToken) {

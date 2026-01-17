@@ -226,6 +226,90 @@
             font-size: 0.85em;
         }
 
+        .spam-item {
+            background: #ffe6e6;
+            border-left: 4px solid #ff6b6b;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+        }
+
+        .spam-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .spam-username {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .spam-reason {
+            background: #ff6b6b;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            text-transform: uppercase;
+        }
+
+        .spam-time {
+            color: #999;
+            font-size: 0.85em;
+            margin-bottom: 5px;
+        }
+
+        .spam-message {
+            font-size: 0.9em;
+            color: #666;
+            font-style: italic;
+        }
+
+        .blacklist-item {
+            background: #fff0f0;
+            border-left: 4px solid #dc3545;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+        }
+
+        .blacklist-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .blacklist-username {
+            font-weight: bold;
+            color: #dc3545;
+            font-size: 1.1em;
+        }
+
+        .blacklist-badge {
+            background: #dc3545;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .blacklist-info {
+            margin-top: 8px;
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .blacklist-reason {
+            margin-top: 5px;
+            font-style: italic;
+            color: #721c24;
+        }
+
         .status-indicator {
             display: inline-block;
             width: 12px;
@@ -321,6 +405,18 @@
                 <div class="stat-value" id="feedbackCount">0</div>
                 <div class="stat-label">Feedback Received</div>
             </div>
+            <div class="stat-card">
+                <div class="stat-value" id="spamCount">0</div>
+                <div class="stat-label">Spam Blocked</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="bannedCount">0</div>
+                <div class="stat-label">Temp Banned</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="blacklistCount">0</div>
+                <div class="stat-label">Blacklisted</div>
+            </div>
         </div>
 
         <div class="content-grid">
@@ -345,6 +441,20 @@
                 <div class="empty-state">No feedback yet</div>
             </div>
         </div>
+
+        <div class="panel">
+            <h2>🚫 Spam Detection</h2>
+            <div id="spam">
+                <div class="empty-state">No spam detected</div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>🔨 Blacklisted Users</h2>
+            <div id="blacklist">
+                <div class="empty-state">No blacklisted users</div>
+            </div>
+        </div>
     </div>
 
     <button class="auto-scroll-toggle" id="autoScrollToggle">Auto-scroll: ON</button>
@@ -359,6 +469,8 @@
         const conversationsDiv = document.getElementById('conversations');
         const errorsDiv = document.getElementById('errors');
         const feedbackDiv = document.getElementById('feedback');
+        const spamDiv = document.getElementById('spam');
+        const blacklistDiv = document.getElementById('blacklist');
         const autoScrollToggle = document.getElementById('autoScrollToggle');
 
         function connect() {
@@ -399,6 +511,8 @@
                     updateConversations(message.data.conversations);
                     updateErrors(message.data.errors);
                     updateFeedback(message.data.feedback);
+                    updateSpam(message.data.spam);
+                    updateBlacklist(message.data.blacklist);
                     break;
                 case 'messageProcessed':
                 case 'conversationCreated':
@@ -413,6 +527,11 @@
                     fetchFeedback();
                     fetchStats();
                     break;
+                case 'spamDetected':
+                    fetchSpam();
+                    fetchStats();
+                    fetchBlacklist();
+                    break;
             }
         }
 
@@ -421,6 +540,9 @@
             document.getElementById('totalMessages').textContent = stats.totalMessages || 0;
             document.getElementById('errorCount').textContent = stats.errors || 0;
             document.getElementById('feedbackCount').textContent = stats.feedback || 0;
+            document.getElementById('spamCount').textContent = stats.spam || 0;
+            document.getElementById('bannedCount').textContent = stats.banned || 0;
+            document.getElementById('blacklistCount').textContent = stats.blacklisted || 0;
         }
 
         function updateConversations(conversations) {
@@ -435,8 +557,13 @@
                         <span class="thread-id">Thread: ${conv.threadId}</span>
                         <span class="message-count">${conv.messageCount} messages</span>
                     </div>
-                    <div class="conversation-time">
-                        Last activity: ${formatTime(conv.lastActivity)}
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px;">
+                        <div style="color: #667eea; font-weight: 500; font-size: 0.9em;">
+                            👤 ${escapeHtml(conv.originalPoster)}
+                        </div>
+                        <div class="conversation-time">
+                            ${formatTime(conv.lastActivity)}
+                        </div>
                     </div>
                     <div id="messages-${conv.threadId}" style="display: none; margin-top: 15px;">
                         ${conv.messages.map(msg => `
@@ -486,6 +613,46 @@
             `).join('');
         }
 
+        function updateSpam(spam) {
+            if (!spam || spam.length === 0) {
+                spamDiv.innerHTML = '<div class="empty-state">No spam detected</div>';
+                return;
+            }
+
+            spamDiv.innerHTML = spam.slice(-20).map(sp => `
+                <div class="spam-item">
+                    <div class="spam-header">
+                        <span class="spam-username">${escapeHtml(sp.username)}</span>
+                        <span class="spam-reason">${sp.reason.replace(/_/g, ' ')}</span>
+                    </div>
+                    <div class="spam-time">${formatTime(sp.timestamp)}</div>
+                    ${sp.content ? `<div class="spam-message">"${escapeHtml(sp.content)}"</div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function updateBlacklist(blacklist) {
+            if (!blacklist || blacklist.length === 0) {
+                blacklistDiv.innerHTML = '<div class="empty-state">No blacklisted users</div>';
+                return;
+            }
+
+            blacklistDiv.innerHTML = blacklist.map(bl => `
+                <div class="blacklist-item">
+                    <div class="blacklist-header">
+                        <span class="blacklist-username">🔨 ${escapeHtml(bl.username)}</span>
+                        <span class="blacklist-badge">BLOCKED</span>
+                    </div>
+                    <div class="blacklist-info">
+                        <div style="color: #999; font-size: 0.85em;">
+                            Blocked by ${escapeHtml(bl.blockedBy)} • ${formatTime(bl.timestamp)}
+                        </div>
+                        <div class="blacklist-reason">Reason: ${escapeHtml(bl.reason)}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
         function toggleMessages(threadId) {
             const messagesDiv = document.getElementById(`messages-${threadId}`);
             if (messagesDiv) {
@@ -515,6 +682,18 @@
             const response = await fetch('/api/feedback');
             const feedback = await response.json();
             updateFeedback(feedback);
+        }
+
+        async function fetchSpam() {
+            const response = await fetch('/api/spam');
+            const spam = await response.json();
+            updateSpam(spam);
+        }
+
+        async function fetchBlacklist() {
+            const response = await fetch('/api/blacklist');
+            const blacklist = await response.json();
+            updateBlacklist(blacklist);
         }
 
         function formatTime(timestamp) {

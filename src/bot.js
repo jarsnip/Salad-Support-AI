@@ -4,6 +4,7 @@ import AIService from './services/aiService.js';
 import ConversationManager from './utils/conversationManager.js';
 import MessageQueue from './utils/messageQueue.js';
 import docsManager from './utils/docsManager.js';
+import SpamFilter from './utils/spamFilter.js';
 
 class SupportBot extends EventEmitter {
   constructor(config) {
@@ -20,6 +21,7 @@ class SupportBot extends EventEmitter {
 
     this.aiService = new AIService(config.anthropicApiKey, config.aiModel);
     this.conversationManager = new ConversationManager(config.maxConversationHistory);
+    this.spamFilter = new SpamFilter(config.spamFilter);
 
     this.messageQueue = new MessageQueue(
       this.processMessage.bind(this),
@@ -72,6 +74,10 @@ class SupportBot extends EventEmitter {
 
         if (interaction.commandName === 'end') {
           await this.handleEndCommand(interaction);
+        } else if (interaction.commandName === 'block') {
+          await this.handleBlockCommand(interaction);
+        } else if (interaction.commandName === 'unblock') {
+          await this.handleUnblockCommand(interaction);
         }
       } catch (error) {
         console.error('Error handling interaction:', error);
@@ -84,6 +90,31 @@ class SupportBot extends EventEmitter {
     try {
       console.log(`\n📩 New support message from ${message.author.tag}: "${message.content.substring(0, 50)}..."`);
 
+      // Check spam filter
+      const spamCheck = await this.spamFilter.checkUser(
+        message.author.id,
+        message.author.username,
+        message.content,
+        message.member
+      );
+
+      if (!spamCheck.allowed) {
+        console.log(`🚫 Spam detected from ${message.author.tag}: ${spamCheck.reason}`);
+
+        // Emit spam event for dashboard
+        this.emit('spamDetected', {
+          userId: message.author.id,
+          username: message.author.tag,
+          reason: spamCheck.reason,
+          message: message.content.substring(0, 100),
+          timestamp: Date.now()
+        });
+
+        // Send user-friendly message
+        await message.reply(spamCheck.message);
+        return;
+      }
+
       const thread = await message.startThread({
         name: `Support: ${message.author.username}`,
         autoArchiveDuration: 60,
@@ -91,6 +122,27 @@ class SupportBot extends EventEmitter {
       });
 
       console.log(`📌 Created thread: ${thread.name} (ID: ${thread.id})`);
+
+      // Set thread permissions: Only OP can send messages, others can only read
+      await thread.permissionOverwrites.edit(message.author.id, {
+        SendMessages: true,
+        ViewChannel: true
+      });
+
+      // Everyone else can view but not send (deny @everyone from sending)
+      await thread.permissionOverwrites.edit(thread.guild.roles.everyone, {
+        SendMessages: false,
+        ViewChannel: true
+      });
+
+      console.log(`🔒 Thread locked to original poster: ${message.author.tag}`);
+
+      // Track the original poster
+      this.conversationManager.setOriginalPoster(thread.id, message.author.id, message.author.username);
+
+      // Record thread creation in spam filter
+      this.spamFilter.recordThread(message.author.id);
+      this.spamFilter.recordMessage(message.author.id, message.content);
 
       await thread.send(`👋 Hi ${message.author}! I'm here to help with your support question. Let me look into that for you...`);
 
@@ -104,6 +156,7 @@ class SupportBot extends EventEmitter {
       this.emit('conversationCreated', {
         threadId: thread.id,
         username: message.author.username,
+        userId: message.author.id,
         initialMessage: message.content,
         timestamp: Date.now()
       });
@@ -124,6 +177,16 @@ class SupportBot extends EventEmitter {
       const parentChannel = message.channel.parent;
 
       if (!parentChannel || parentChannel.id !== this.config.supportChannelId) {
+        return;
+      }
+
+      // Check if the user is the original poster
+      const originalPosterId = this.conversationManager.getOriginalPosterId(message.channel.id);
+
+      if (originalPosterId && message.author.id !== originalPosterId) {
+        console.log(`⚠️ Ignoring message from non-OP user ${message.author.tag} in thread ${message.channel.id}`);
+        // Optionally send an ephemeral message (but Discord doesn't support this in threads easily)
+        // Just silently ignore non-OP messages as failsafe
         return;
       }
 
@@ -315,6 +378,138 @@ class SupportBot extends EventEmitter {
 
     } catch (error) {
       console.error('Error handling /end command:', error);
+      this.emit('error', error);
+
+      try {
+        await interaction.reply({
+          content: 'An error occurred while processing the command.',
+          ephemeral: true
+        });
+      } catch (replyError) {
+        console.error('Error sending error reply:', replyError);
+      }
+    }
+  }
+
+  async handleBlockCommand(interaction) {
+    try {
+      // Check if user has moderator permissions
+      const member = interaction.member;
+      const hasModPermission = member.permissions.has(PermissionFlagsBits.ModerateMembers) ||
+                               member.permissions.has(PermissionFlagsBits.Administrator);
+
+      if (!hasModPermission) {
+        await interaction.reply({
+          content: '❌ You do not have permission to use this command. Moderator or Administrator role required.',
+          ephemeral: true
+        });
+        return;
+      }
+
+      const targetUser = interaction.options.getUser('user');
+      const reason = interaction.options.getString('reason') || 'No reason provided';
+
+      if (!targetUser) {
+        await interaction.reply({
+          content: '❌ Invalid user specified.',
+          ephemeral: true
+        });
+        return;
+      }
+
+      // Prevent blocking bots or self
+      if (targetUser.bot) {
+        await interaction.reply({
+          content: '❌ Cannot block bot users.',
+          ephemeral: true
+        });
+        return;
+      }
+
+      if (targetUser.id === interaction.user.id) {
+        await interaction.reply({
+          content: '❌ You cannot block yourself.',
+          ephemeral: true
+        });
+        return;
+      }
+
+      // Add to blacklist
+      this.spamFilter.addToBlacklist(
+        targetUser.id,
+        targetUser.tag,
+        reason,
+        interaction.user.tag
+      );
+
+      await interaction.reply({
+        content: `✅ User ${targetUser.tag} has been blacklisted from creating support threads.\n**Reason:** ${reason}`,
+        ephemeral: true
+      });
+
+      console.log(`🔨 ${interaction.user.tag} blocked ${targetUser.tag} - Reason: ${reason}`);
+
+    } catch (error) {
+      console.error('Error handling /block command:', error);
+      this.emit('error', error);
+
+      try {
+        await interaction.reply({
+          content: 'An error occurred while processing the command.',
+          ephemeral: true
+        });
+      } catch (replyError) {
+        console.error('Error sending error reply:', replyError);
+      }
+    }
+  }
+
+  async handleUnblockCommand(interaction) {
+    try {
+      // Check if user has moderator permissions
+      const member = interaction.member;
+      const hasModPermission = member.permissions.has(PermissionFlagsBits.ModerateMembers) ||
+                               member.permissions.has(PermissionFlagsBits.Administrator);
+
+      if (!hasModPermission) {
+        await interaction.reply({
+          content: '❌ You do not have permission to use this command. Moderator or Administrator role required.',
+          ephemeral: true
+        });
+        return;
+      }
+
+      const targetUser = interaction.options.getUser('user');
+
+      if (!targetUser) {
+        await interaction.reply({
+          content: '❌ Invalid user specified.',
+          ephemeral: true
+        });
+        return;
+      }
+
+      // Check if user is blacklisted
+      if (!this.spamFilter.isBlacklisted(targetUser.id)) {
+        await interaction.reply({
+          content: `ℹ️ User ${targetUser.tag} is not blacklisted.`,
+          ephemeral: true
+        });
+        return;
+      }
+
+      // Remove from blacklist
+      this.spamFilter.removeFromBlacklist(targetUser.id);
+
+      await interaction.reply({
+        content: `✅ User ${targetUser.tag} has been unblocked and can now create support threads.`,
+        ephemeral: true
+      });
+
+      console.log(`✅ ${interaction.user.tag} unblocked ${targetUser.tag}`);
+
+    } catch (error) {
+      console.error('Error handling /unblock command:', error);
       this.emit('error', error);
 
       try {

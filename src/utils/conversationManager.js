@@ -10,10 +10,30 @@ class ConversationManager {
         threadId,
         messages: [],
         createdAt: Date.now(),
-        lastActivity: Date.now()
+        lastActivity: Date.now(),
+        originalPosterId: null,
+        originalPosterUsername: null
       });
     }
     return this.conversations.get(threadId);
+  }
+
+  setOriginalPoster(threadId, userId, username) {
+    const conversation = this.getConversation(threadId);
+    if (!conversation.originalPosterId) {
+      conversation.originalPosterId = userId;
+      conversation.originalPosterUsername = username;
+    }
+  }
+
+  getOriginalPosterId(threadId) {
+    const conversation = this.getConversation(threadId);
+    return conversation.originalPosterId;
+  }
+
+  isOriginalPoster(threadId, userId) {
+    const conversation = this.getConversation(threadId);
+    return conversation.originalPosterId === userId;
   }
 
   addMessage(threadId, role, content, userId = null) {

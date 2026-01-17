@@ -42,17 +42,36 @@ export class DashboardServer {
     // API endpoint to get stats
     this.app.get('/api/stats', (req, res) => {
       const stats = this.bot.conversationManager.getStats();
+      const spamStats = this.bot.spamFilter.getStats();
       res.json({
         activeConversations: stats.activeConversations,
         totalMessages: stats.totalMessages,
         errors: this.errors.length,
-        feedback: this.feedbackData.length
+        feedback: this.feedbackData.length,
+        spam: spamStats.totalSpamEvents,
+        banned: spamStats.bannedUsers,
+        blacklisted: spamStats.blacklistedUsers
       });
     });
 
     // API endpoint to get feedback data
     this.app.get('/api/feedback', (req, res) => {
       res.json(this.feedbackData);
+    });
+
+    // API endpoint to get spam events
+    this.app.get('/api/spam', (req, res) => {
+      res.json(this.bot.spamFilter.getSpamEvents());
+    });
+
+    // API endpoint to get banned users
+    this.app.get('/api/banned', (req, res) => {
+      res.json(this.bot.spamFilter.getBannedUsers());
+    });
+
+    // API endpoint to get blacklisted users
+    this.app.get('/api/blacklist', (req, res) => {
+      res.json(this.bot.spamFilter.getBlacklist());
     });
   }
 
@@ -68,7 +87,10 @@ export class DashboardServer {
           conversations: this.getConversationsData(),
           errors: this.errors,
           stats: this.bot.conversationManager.getStats(),
-          feedback: this.feedbackData
+          feedback: this.feedbackData,
+          spam: this.bot.spamFilter.getSpamEvents(),
+          banned: this.bot.spamFilter.getBannedUsers(),
+          blacklist: this.bot.spamFilter.getBlacklist()
         }
       }));
 
@@ -121,6 +143,14 @@ export class DashboardServer {
         data: feedback
       });
     });
+
+    // Listen for spam detection
+    this.bot.on('spamDetected', (spam) => {
+      this.broadcast({
+        type: 'spamDetected',
+        data: spam
+      });
+    });
   }
 
   getConversationsData() {
@@ -131,6 +161,8 @@ export class DashboardServer {
         messageCount: conversation.messages.length,
         createdAt: conversation.createdAt,
         lastActivity: conversation.lastActivity,
+        originalPoster: conversation.originalPosterUsername || 'Unknown',
+        originalPosterId: conversation.originalPosterId,
         messages: conversation.messages.slice(-10) // Last 10 messages
       });
     }

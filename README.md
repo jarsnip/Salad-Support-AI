@@ -5,13 +5,18 @@ An intelligent Discord support bot powered by Claude AI that automatically handl
 ## Features
 
 - **Automatic Thread Creation**: Creates a dedicated thread for each support message in the designated channel
+- **Private Thread Permissions**: Each thread is locked to the original poster - only they can send messages, others can read
 - **AI-Powered Responses**: Uses Claude AI to provide intelligent, context-aware responses
 - **Support Documentation Bank**: Loads and uses markdown documentation files to answer questions accurately
 - **Conversation Memory**: Maintains conversation history within each thread for contextual responses
 - **Message Queueing**: Handles multiple concurrent requests efficiently (configurable concurrency limit)
-- **Multiple Messages Support**: Processes multiple messages in the same thread seamlessly
+- **Single-User Focus**: Bot only responds to the original poster as a failsafe, preventing confusion
 - **Auto-cleanup**: Removes old conversation data to manage memory
-- **Live Dashboard**: Real-time web dashboard to monitor conversations, errors, and feedback
+- **Advanced Spam Protection**: Multi-layer spam detection with rate limiting, cooldowns, and content analysis
+- **Auto-ban System**: Automatically bans users after repeated violations
+- **Moderator Tools**: `/block` and `/unblock` commands for permanent user blacklisting
+- **Live Dashboard**: Real-time web dashboard to monitor conversations, errors, feedback, spam, and blacklists
+- **User Tracking**: Dashboard shows which user started each conversation
 - **Feedback System**: `/end` command that locks threads and collects user feedback with reactions
 - **Real-time Updates**: WebSocket-powered dashboard with live statistics and conversation tracking
 
@@ -48,6 +53,12 @@ An intelligent Discord support bot powered by Claude AI that automatically handl
    MAX_CONVERSATION_HISTORY=10
    BOT_NAME=Support Bot
    DASHBOARD_PORT=3000
+   SPAM_FILTER_ENABLED=true
+   SPAM_MAX_THREADS_PER_WINDOW=3
+   SPAM_TIME_WINDOW=600000
+   SPAM_COOLDOWN=120000
+   SPAM_AUTO_BAN_THRESHOLD=5
+   SPAM_BAN_DURATION=3600000
    ```
 
 4. **Register Discord slash commands**
@@ -79,7 +90,9 @@ An intelligent Discord support bot powered by Claude AI that automatically handl
    - Send Messages
    - Send Messages in Threads
    - Create Public Threads
+   - Manage Threads (required to set thread permissions)
    - Read Message History
+   - Add Reactions (for feedback system)
 
 4. **Enable Required Intents**
 
@@ -143,7 +156,10 @@ The bot includes a real-time web dashboard that provides:
 - **Live Conversation Monitoring**: See all active support threads with message counts and timestamps
 - **Error Tracking**: View recent errors with stack traces
 - **Feedback Analytics**: Track user satisfaction with thumbs up/down reactions
-- **Real-time Statistics**: Active conversations, total messages, error count, and feedback count
+- **Spam Detection Log**: View all spam attempts with usernames, reasons, and timestamps (live updates)
+- **Banned Users List**: See currently temp-banned users and remaining time
+- **Blacklisted Users Panel**: View permanently blocked users with reasons and moderator info
+- **Real-time Statistics**: Active conversations, messages, errors, feedback, spam blocks, temp bans, and blacklisted users
 - **Auto-refresh**: WebSocket-powered live updates without page reloads
 
 ### Dashboard Features
@@ -165,13 +181,87 @@ Users or moderators can end a support conversation using the `/end` slash comman
 
 This helps track resolution rates and gather user satisfaction data.
 
+## Moderator Tools
+
+The bot includes powerful moderation commands for server administrators and moderators:
+
+### `/block <user> [reason]`
+
+Permanently blacklists a user from creating support threads.
+
+- **Usage:** `/block @username Reason for blocking`
+- **Permissions Required:** Moderate Members or Administrator
+- **Response:** User receives: "🚫 You are blacklisted from creating support threads."
+- **Dashboard:** Appears in the Blacklisted Users panel with reason and moderator name
+
+**Example:**
+```
+/block @Spammer Repeated spam attempts
+```
+
+### `/unblock <user>`
+
+Removes a user from the blacklist, allowing them to create support threads again.
+
+- **Usage:** `/unblock @username`
+- **Permissions Required:** Moderate Members or Administrator
+- **Response:** Confirmation message that user has been unblocked
+
+**Example:**
+```
+/unblock @Spammer
+```
+
+### Blacklist Features
+
+- **Permanent Blocking**: Unlike temporary bans, blacklisted users remain blocked until manually unblocked
+- **Audit Trail**: Dashboard shows who blocked each user, when, and why
+- **Separate from Auto-bans**: Manual blocks are independent of automatic spam detection
+- **Moderator-only**: Only users with Moderate Members or Administrator permissions can use these commands
+
+## Spam Protection
+
+The bot includes comprehensive spam protection to prevent abuse:
+
+### Features
+
+- **Rate Limiting**: Users can only create a limited number of threads within a time window (default: 3 threads per 10 minutes)
+- **Cooldown Period**: Minimum time between thread creations (default: 2 minutes)
+- **Duplicate Detection**: Prevents users from sending the same message repeatedly
+- **Content Filters**:
+  - Blocks messages with excessive links (> 3 URLs)
+  - Filters excessive caps lock usage
+  - Detects repeated character spam
+- **Auto-ban System**: Users who violate spam rules repeatedly are automatically banned temporarily
+- **Admin Bypass**: Users with Administrator or Moderator roles bypass all spam filters
+- **Real-time Tracking**: All spam attempts are logged and visible in the dashboard
+
+### User Feedback
+
+When spam is detected, users receive helpful messages:
+- Rate limit: "You've reached the limit of 3 support threads per 10 minutes. Please wait X minutes."
+- Cooldown: "Please wait X seconds before creating another support thread."
+- Duplicate: "You already sent this exact message recently. Please wait or provide more details."
+- Temp banned: "You are temporarily banned from creating support threads. Time remaining: X minutes."
+- Blacklisted: "You are blacklisted from creating support threads."
+
+### Dashboard Integration
+
+The dashboard displays:
+- Total spam attempts blocked
+- Number of currently banned users
+- Recent spam events with usernames, reasons, and timestamps
+- Real-time spam detection notifications
+
 ## How It Works
 
 1. **User posts in support channel**: When a user posts a message in the designated support channel, the bot automatically creates a thread
 2. **Thread creation**: A new thread is created with the title "Support: [username]"
-3. **AI processes the request**: The bot uses Claude AI with the loaded documentation to generate a helpful response
-4. **Conversation continues**: Users can continue asking questions in the thread, and the bot maintains context
-5. **Multiple messages**: The bot can handle multiple messages from different users simultaneously using a queue system
+3. **Thread permissions**: The thread is locked so only the original poster can send messages (others can read). This ensures 1-on-1 support conversations
+4. **AI processes the request**: The bot uses Claude AI with the loaded documentation to generate a helpful response
+5. **Conversation continues**: The user can continue asking questions in the thread, and the bot maintains context
+6. **Multiple threads**: The bot can handle multiple support threads simultaneously using a queue system
+7. **Failsafe validation**: As an additional safeguard, the bot only responds to messages from the original poster
 
 ## Configuration Options
 
@@ -185,6 +275,12 @@ This helps track resolution rates and gather user satisfaction data.
 | `MAX_CONVERSATION_HISTORY` | Number of messages to keep in memory | `10` |
 | `BOT_NAME` | Name of the bot | `Support Bot` |
 | `DASHBOARD_PORT` | Port for the live dashboard web server | `3000` |
+| `SPAM_FILTER_ENABLED` | Enable/disable spam filtering | `true` |
+| `SPAM_MAX_THREADS_PER_WINDOW` | Max threads a user can create in time window | `3` |
+| `SPAM_TIME_WINDOW` | Time window for rate limiting (ms) | `600000` (10 min) |
+| `SPAM_COOLDOWN` | Cooldown between thread creations (ms) | `120000` (2 min) |
+| `SPAM_AUTO_BAN_THRESHOLD` | Violations before auto-ban | `5` |
+| `SPAM_BAN_DURATION` | Duration of auto-ban (ms) | `3600000` (1 hour) |
 
 ## Customizing the AI Behavior
 
@@ -204,6 +300,7 @@ buildSystemPrompt() {
 - **`src/utils/conversationManager.js`**: Manages conversation history and context
 - **`src/utils/docsManager.js`**: Loads and manages support documentation
 - **`src/utils/messageQueue.js`**: Handles concurrent message processing
+- **`src/utils/spamFilter.js`**: Spam detection, rate limiting, and auto-ban system
 - **`src/dashboard/server.js`**: Express server with WebSocket for live dashboard
 - **`src/dashboard/public/index.html`**: Dashboard web interface
 - **`src/registerCommands.js`**: Script to register Discord slash commands

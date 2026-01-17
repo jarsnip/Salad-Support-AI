@@ -74,6 +74,10 @@ class SupportBot extends EventEmitter {
 
         if (interaction.commandName === 'end') {
           await this.handleEndCommand(interaction);
+        } else if (interaction.commandName === 'block') {
+          await this.handleBlockCommand(interaction);
+        } else if (interaction.commandName === 'unblock') {
+          await this.handleUnblockCommand(interaction);
         }
       } catch (error) {
         console.error('Error handling interaction:', error);
@@ -374,6 +378,138 @@ class SupportBot extends EventEmitter {
 
     } catch (error) {
       console.error('Error handling /end command:', error);
+      this.emit('error', error);
+
+      try {
+        await interaction.reply({
+          content: 'An error occurred while processing the command.',
+          ephemeral: true
+        });
+      } catch (replyError) {
+        console.error('Error sending error reply:', replyError);
+      }
+    }
+  }
+
+  async handleBlockCommand(interaction) {
+    try {
+      // Check if user has moderator permissions
+      const member = interaction.member;
+      const hasModPermission = member.permissions.has(PermissionFlagsBits.ModerateMembers) ||
+                               member.permissions.has(PermissionFlagsBits.Administrator);
+
+      if (!hasModPermission) {
+        await interaction.reply({
+          content: '❌ You do not have permission to use this command. Moderator or Administrator role required.',
+          ephemeral: true
+        });
+        return;
+      }
+
+      const targetUser = interaction.options.getUser('user');
+      const reason = interaction.options.getString('reason') || 'No reason provided';
+
+      if (!targetUser) {
+        await interaction.reply({
+          content: '❌ Invalid user specified.',
+          ephemeral: true
+        });
+        return;
+      }
+
+      // Prevent blocking bots or self
+      if (targetUser.bot) {
+        await interaction.reply({
+          content: '❌ Cannot block bot users.',
+          ephemeral: true
+        });
+        return;
+      }
+
+      if (targetUser.id === interaction.user.id) {
+        await interaction.reply({
+          content: '❌ You cannot block yourself.',
+          ephemeral: true
+        });
+        return;
+      }
+
+      // Add to blacklist
+      this.spamFilter.addToBlacklist(
+        targetUser.id,
+        targetUser.tag,
+        reason,
+        interaction.user.tag
+      );
+
+      await interaction.reply({
+        content: `✅ User ${targetUser.tag} has been blacklisted from creating support threads.\n**Reason:** ${reason}`,
+        ephemeral: true
+      });
+
+      console.log(`🔨 ${interaction.user.tag} blocked ${targetUser.tag} - Reason: ${reason}`);
+
+    } catch (error) {
+      console.error('Error handling /block command:', error);
+      this.emit('error', error);
+
+      try {
+        await interaction.reply({
+          content: 'An error occurred while processing the command.',
+          ephemeral: true
+        });
+      } catch (replyError) {
+        console.error('Error sending error reply:', replyError);
+      }
+    }
+  }
+
+  async handleUnblockCommand(interaction) {
+    try {
+      // Check if user has moderator permissions
+      const member = interaction.member;
+      const hasModPermission = member.permissions.has(PermissionFlagsBits.ModerateMembers) ||
+                               member.permissions.has(PermissionFlagsBits.Administrator);
+
+      if (!hasModPermission) {
+        await interaction.reply({
+          content: '❌ You do not have permission to use this command. Moderator or Administrator role required.',
+          ephemeral: true
+        });
+        return;
+      }
+
+      const targetUser = interaction.options.getUser('user');
+
+      if (!targetUser) {
+        await interaction.reply({
+          content: '❌ Invalid user specified.',
+          ephemeral: true
+        });
+        return;
+      }
+
+      // Check if user is blacklisted
+      if (!this.spamFilter.isBlacklisted(targetUser.id)) {
+        await interaction.reply({
+          content: `ℹ️ User ${targetUser.tag} is not blacklisted.`,
+          ephemeral: true
+        });
+        return;
+      }
+
+      // Remove from blacklist
+      this.spamFilter.removeFromBlacklist(targetUser.id);
+
+      await interaction.reply({
+        content: `✅ User ${targetUser.tag} has been unblocked and can now create support threads.`,
+        ephemeral: true
+      });
+
+      console.log(`✅ ${interaction.user.tag} unblocked ${targetUser.tag}`);
+
+    } catch (error) {
+      console.error('Error handling /unblock command:', error);
       this.emit('error', error);
 
       try {

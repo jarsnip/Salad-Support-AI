@@ -49,7 +49,8 @@ export class DashboardServer {
         errors: this.errors.length,
         feedback: this.feedbackData.length,
         spam: spamStats.totalSpamEvents,
-        banned: spamStats.bannedUsers
+        banned: spamStats.bannedUsers,
+        blacklisted: spamStats.blacklistedUsers
       });
     });
 
@@ -67,6 +68,11 @@ export class DashboardServer {
     this.app.get('/api/banned', (req, res) => {
       res.json(this.bot.spamFilter.getBannedUsers());
     });
+
+    // API endpoint to get blacklisted users
+    this.app.get('/api/blacklist', (req, res) => {
+      res.json(this.bot.spamFilter.getBlacklist());
+    });
   }
 
   setupWebSocket() {
@@ -83,7 +89,8 @@ export class DashboardServer {
           stats: this.bot.conversationManager.getStats(),
           feedback: this.feedbackData,
           spam: this.bot.spamFilter.getSpamEvents(),
-          banned: this.bot.spamFilter.getBannedUsers()
+          banned: this.bot.spamFilter.getBannedUsers(),
+          blacklist: this.bot.spamFilter.getBlacklist()
         }
       }));
 

@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salad Support AI - Live Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .panel h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
+        }
+
+        .conversation-item {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .conversation-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .conversation-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .thread-id {
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .message-count {
+            background: #667eea;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8em;
+        }
+
+        .conversation-time {
+            color: #999;
+            font-size: 0.85em;
+        }
+
+        .message-item {
+            background: white;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 6px;
+            border-left: 3px solid #ddd;
+        }
+
+        .message-item.user {
+            border-left-color: #764ba2;
+        }
+
+        .message-item.assistant {
+            border-left-color: #667eea;
+        }
+
+        .message-role {
+            font-weight: bold;
+            font-size: 0.85em;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .message-item.user .message-role {
+            color: #764ba2;
+        }
+
+        .message-item.assistant .message-role {
+            color: #667eea;
+        }
+
+        .message-content {
+            color: #333;
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+
+        .error-item {
+            background: #fff3cd;
+            border-left: 4px solid #ff6b6b;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+        }
+
+        .error-time {
+            color: #999;
+            font-size: 0.85em;
+            margin-bottom: 5px;
+        }
+
+        .error-message {
+            color: #721c24;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .error-stack {
+            font-family: 'Courier New', monospace;
+            font-size: 0.75em;
+            color: #666;
+            max-height: 100px;
+            overflow-y: auto;
+            background: white;
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        .feedback-item {
+            background: #f8f9fa;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+        }
+
+        .feedback-item.negative {
+            border-left-color: #dc3545;
+        }
+
+        .feedback-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .feedback-type {
+            font-size: 1.5em;
+        }
+
+        .feedback-time {
+            color: #999;
+            font-size: 0.85em;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #28a745;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.disconnected {
+            background: #dc3545;
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .connection-status {
+            text-align: center;
+            color: white;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #999;
+            padding: 40px;
+            font-style: italic;
+        }
+
+        .auto-scroll-toggle {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1em;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            transition: all 0.2s;
+        }
+
+        .auto-scroll-toggle:hover {
+            background: #764ba2;
+            transform: scale(1.05);
+        }
+
+        .auto-scroll-toggle.disabled {
+            background: #6c757d;
+        }
+
+        @media (max-width: 768px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🥗 Salad Support AI - Live Dashboard</h1>
+
+        <div class="connection-status">
+            <span class="status-indicator" id="statusIndicator"></span>
+            <span id="statusText">Connecting...</span>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="activeConversations">0</div>
+                <div class="stat-label">Active Conversations</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalMessages">0</div>
+                <div class="stat-label">Total Messages</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="errorCount">0</div>
+                <div class="stat-label">Errors</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="feedbackCount">0</div>
+                <div class="stat-label">Feedback Received</div>
+            </div>
+        </div>
+
+        <div class="content-grid">
+            <div class="panel">
+                <h2>💬 Live Conversations</h2>
+                <div id="conversations">
+                    <div class="empty-state">No active conversations</div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h2>⚠️ Recent Errors</h2>
+                <div id="errors">
+                    <div class="empty-state">No errors</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>👍 Feedback</h2>
+            <div id="feedback">
+                <div class="empty-state">No feedback yet</div>
+            </div>
+        </div>
+    </div>
+
+    <button class="auto-scroll-toggle" id="autoScrollToggle">Auto-scroll: ON</button>
+
+    <script>
+        let ws;
+        let autoScroll = true;
+        let reconnectTimeout;
+
+        const statusIndicator = document.getElementById('statusIndicator');
+        const statusText = document.getElementById('statusText');
+        const conversationsDiv = document.getElementById('conversations');
+        const errorsDiv = document.getElementById('errors');
+        const feedbackDiv = document.getElementById('feedback');
+        const autoScrollToggle = document.getElementById('autoScrollToggle');
+
+        function connect() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${protocol}//${window.location.host}`);
+
+            ws.onopen = () => {
+                console.log('Connected to dashboard');
+                statusIndicator.classList.remove('disconnected');
+                statusText.textContent = 'Connected';
+                if (reconnectTimeout) {
+                    clearTimeout(reconnectTimeout);
+                    reconnectTimeout = null;
+                }
+            };
+
+            ws.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                handleMessage(message);
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+
+            ws.onclose = () => {
+                console.log('Disconnected from dashboard');
+                statusIndicator.classList.add('disconnected');
+                statusText.textContent = 'Disconnected - Reconnecting...';
+                reconnectTimeout = setTimeout(connect, 3000);
+            };
+        }
+
+        function handleMessage(message) {
+            switch (message.type) {
+                case 'init':
+                    updateStats(message.data.stats);
+                    updateConversations(message.data.conversations);
+                    updateErrors(message.data.errors);
+                    updateFeedback(message.data.feedback);
+                    break;
+                case 'messageProcessed':
+                case 'conversationCreated':
+                    fetchConversations();
+                    fetchStats();
+                    break;
+                case 'error':
+                    fetchErrors();
+                    fetchStats();
+                    break;
+                case 'feedbackReceived':
+                    fetchFeedback();
+                    fetchStats();
+                    break;
+            }
+        }
+
+        function updateStats(stats) {
+            document.getElementById('activeConversations').textContent = stats.activeConversations || 0;
+            document.getElementById('totalMessages').textContent = stats.totalMessages || 0;
+            document.getElementById('errorCount').textContent = stats.errors || 0;
+            document.getElementById('feedbackCount').textContent = stats.feedback || 0;
+        }
+
+        function updateConversations(conversations) {
+            if (!conversations || conversations.length === 0) {
+                conversationsDiv.innerHTML = '<div class="empty-state">No active conversations</div>';
+                return;
+            }
+
+            conversationsDiv.innerHTML = conversations.map(conv => `
+                <div class="conversation-item" onclick="toggleMessages('${conv.threadId}')">
+                    <div class="conversation-header">
+                        <span class="thread-id">Thread: ${conv.threadId}</span>
+                        <span class="message-count">${conv.messageCount} messages</span>
+                    </div>
+                    <div class="conversation-time">
+                        Last activity: ${formatTime(conv.lastActivity)}
+                    </div>
+                    <div id="messages-${conv.threadId}" style="display: none; margin-top: 15px;">
+                        ${conv.messages.map(msg => `
+                            <div class="message-item ${msg.role}">
+                                <div class="message-role">${msg.role}</div>
+                                <div class="message-content">${escapeHtml(msg.content.substring(0, 200))}${msg.content.length > 200 ? '...' : ''}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateErrors(errors) {
+            if (!errors || errors.length === 0) {
+                errorsDiv.innerHTML = '<div class="empty-state">No errors</div>';
+                return;
+            }
+
+            errorsDiv.innerHTML = errors.slice(-10).reverse().map(error => `
+                <div class="error-item">
+                    <div class="error-time">${formatTime(error.timestamp)}</div>
+                    <div class="error-message">${escapeHtml(error.message)}</div>
+                    ${error.stack ? `<div class="error-stack">${escapeHtml(error.stack.substring(0, 300))}</div>` : ''}
+                </div>
+            `).join('');
+
+            if (autoScroll) {
+                errorsDiv.scrollTop = errorsDiv.scrollHeight;
+            }
+        }
+
+        function updateFeedback(feedback) {
+            if (!feedback || feedback.length === 0) {
+                feedbackDiv.innerHTML = '<div class="empty-state">No feedback yet</div>';
+                return;
+            }
+
+            feedbackDiv.innerHTML = feedback.slice(-20).reverse().map(fb => `
+                <div class="feedback-item ${fb.type === 'negative' ? 'negative' : ''}">
+                    <div class="feedback-header">
+                        <span class="feedback-type">${fb.type === 'positive' ? '👍' : '👎'}</span>
+                        <span class="feedback-time">${formatTime(fb.timestamp)}</span>
+                    </div>
+                    <div class="thread-id">Thread: ${fb.threadId}</div>
+                </div>
+            `).join('');
+        }
+
+        function toggleMessages(threadId) {
+            const messagesDiv = document.getElementById(`messages-${threadId}`);
+            if (messagesDiv) {
+                messagesDiv.style.display = messagesDiv.style.display === 'none' ? 'block' : 'none';
+            }
+        }
+
+        async function fetchConversations() {
+            const response = await fetch('/api/conversations');
+            const conversations = await response.json();
+            updateConversations(conversations);
+        }
+
+        async function fetchErrors() {
+            const response = await fetch('/api/errors');
+            const errors = await response.json();
+            updateErrors(errors);
+        }
+
+        async function fetchStats() {
+            const response = await fetch('/api/stats');
+            const stats = await response.json();
+            updateStats(stats);
+        }
+
+        async function fetchFeedback() {
+            const response = await fetch('/api/feedback');
+            const feedback = await response.json();
+            updateFeedback(feedback);
+        }
+
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
+
+            if (diff < 60000) return 'Just now';
+            if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+            if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+
+            return date.toLocaleString();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        autoScrollToggle.addEventListener('click', () => {
+            autoScroll = !autoScroll;
+            autoScrollToggle.textContent = `Auto-scroll: ${autoScroll ? 'ON' : 'OFF'}`;
+            autoScrollToggle.classList.toggle('disabled', !autoScroll);
+        });
+
+        connect();
+    </script>
+</body>
+</html>

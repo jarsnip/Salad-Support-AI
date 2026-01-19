@@ -354,12 +354,10 @@ class SupportBot extends EventEmitter {
       const originalPosterId = this.conversationManager.getOriginalPosterId(channel.id);
       const userMention = originalPosterId ? `<@${originalPosterId}>` : '';
 
-      await interaction.reply({
+      const replyMessage = await interaction.reply({
         content: `${userMention} 👋 Thank you for using our support! Please provide feedback by reacting to this message:\n👍 if your issue was resolved\n👎 if you need more help`,
         fetchReply: true
       });
-
-      const replyMessage = await interaction.fetchReply();
 
       await replyMessage.react('👍');
       await replyMessage.react('👎');

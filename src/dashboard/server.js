@@ -255,6 +255,64 @@ export class DashboardServer {
       }
     });
 
+    // API endpoint to download all transcripts as a zip file
+    // IMPORTANT: This must be defined BEFORE the :threadId routes to avoid matching "download-all" as a threadId
+    this.app.get('/api/transcripts/download-all', (req, res) => {
+      try {
+        const transcripts = this.bot.conversationManager.listTranscripts();
+
+        if (transcripts.length === 0) {
+          return res.status(404).send('No transcripts found');
+        }
+
+        // Set response headers for zip download
+        res.setHeader('Content-Type', 'application/zip');
+        res.setHeader('Content-Disposition', `attachment; filename="transcripts-${Date.now()}.zip"`);
+
+        // Create archiver instance
+        const archive = archiver('zip', {
+          zlib: { level: 9 } // Maximum compression
+        });
+
+        // Handle archiver errors
+        archive.on('error', (err) => {
+          console.error('Error creating zip archive:', err);
+          res.status(500).send('Error creating zip file');
+        });
+
+        // Pipe archive to response
+        archive.pipe(res);
+
+        // Add each transcript as HTML file to the zip
+        for (const transcript of transcripts) {
+          const conversationObj = {
+            threadId: transcript.threadId,
+            originalPosterUsername: transcript.originalPosterUsername,
+            createdAt: transcript.createdAt,
+            lastActivity: transcript.endedAt || Date.now(),
+            messages: transcript.messages,
+            feedback: transcript.feedback || null
+          };
+
+          const html = this.bot.conversationManager.generateHTMLTranscript(conversationObj);
+
+          if (html) {
+            // Add HTML file to zip with sanitized filename
+            const filename = `transcript-${transcript.threadId}.html`;
+            archive.append(html, { name: filename });
+          }
+        }
+
+        // Finalize the archive
+        archive.finalize();
+
+        console.log(`📦 Generated zip file with ${transcripts.length} transcripts`);
+      } catch (error) {
+        console.error('Error downloading all transcripts:', error);
+        res.status(500).send('Internal server error');
+      }
+    });
+
     // API endpoint to download transcript as HTML
     this.app.get('/api/transcripts/:threadId/download', (req, res) => {
       try {
@@ -314,63 +372,6 @@ export class DashboardServer {
         res.json({ success: true, message: 'Transcript deleted successfully' });
       } catch (error) {
         console.error('Error deleting transcript:', error);
-        res.status(500).send('Internal server error');
-      }
-    });
-
-    // API endpoint to download all transcripts as a zip file
-    this.app.get('/api/transcripts/download-all', (req, res) => {
-      try {
-        const transcripts = this.bot.conversationManager.listTranscripts();
-
-        if (transcripts.length === 0) {
-          return res.status(404).send('No transcripts found');
-        }
-
-        // Set response headers for zip download
-        res.setHeader('Content-Type', 'application/zip');
-        res.setHeader('Content-Disposition', `attachment; filename="transcripts-${Date.now()}.zip"`);
-
-        // Create archiver instance
-        const archive = archiver('zip', {
-          zlib: { level: 9 } // Maximum compression
-        });
-
-        // Handle archiver errors
-        archive.on('error', (err) => {
-          console.error('Error creating zip archive:', err);
-          res.status(500).send('Error creating zip file');
-        });
-
-        // Pipe archive to response
-        archive.pipe(res);
-
-        // Add each transcript as HTML file to the zip
-        for (const transcript of transcripts) {
-          const conversationObj = {
-            threadId: transcript.threadId,
-            originalPosterUsername: transcript.originalPosterUsername,
-            createdAt: transcript.createdAt,
-            lastActivity: transcript.endedAt || Date.now(),
-            messages: transcript.messages,
-            feedback: transcript.feedback || null
-          };
-
-          const html = this.bot.conversationManager.generateHTMLTranscript(conversationObj);
-
-          if (html) {
-            // Add HTML file to zip with sanitized filename
-            const filename = `transcript-${transcript.threadId}.html`;
-            archive.append(html, { name: filename });
-          }
-        }
-
-        // Finalize the archive
-        archive.finalize();
-
-        console.log(`📦 Generated zip file with ${transcripts.length} transcripts`);
-      } catch (error) {
-        console.error('Error downloading all transcripts:', error);
         res.status(500).send('Internal server error');
       }
     });

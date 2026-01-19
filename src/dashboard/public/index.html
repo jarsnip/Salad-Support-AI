@@ -33,10 +33,16 @@
         }
 
         .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
             margin-bottom: 30px;
+            justify-content: center;
+        }
+
+        .stats-grid .stat-card {
+            flex: 0 1 auto;
+            min-width: 150px;
         }
 
         .stat-card {
@@ -411,6 +417,74 @@
             color: #ffb3b3;
         }
 
+        .blacklist-form {
+            background: #1e2438;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #a0a0a0;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .form-group input {
+            width: 100%;
+            background: #252b48;
+            border: 1px solid #3a4266;
+            color: #e0e0e0;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.95em;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #8b9eff;
+        }
+
+        .btn-primary {
+            background: #8b9eff;
+            color: #1a1a2e;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover {
+            background: #a78bfa;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+            transform: scale(1.05);
+        }
+
         .status-indicator {
             display: inline-block;
             width: 12px;
@@ -502,10 +576,6 @@
                 <div class="stat-label">Total Messages</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value" id="errorCount">0</div>
-                <div class="stat-label">Errors</div>
-            </div>
-            <div class="stat-card">
                 <div class="stat-value" id="feedbackCount">0</div>
                 <div class="stat-label">Feedback Received</div>
             </div>
@@ -560,7 +630,22 @@
         </div>
 
         <div class="panel">
-            <h2>🔨 Blacklisted Users</h2>
+            <h2>🔨 Blacklist Management</h2>
+            <div class="blacklist-form">
+                <div class="form-group">
+                    <label for="blacklistUserId">User ID</label>
+                    <input type="text" id="blacklistUserId" placeholder="Enter Discord user ID">
+                </div>
+                <div class="form-group">
+                    <label for="blacklistUsername">Username (optional)</label>
+                    <input type="text" id="blacklistUsername" placeholder="Enter username">
+                </div>
+                <div class="form-group">
+                    <label for="blacklistReason">Reason</label>
+                    <input type="text" id="blacklistReason" placeholder="Enter reason for blacklist">
+                </div>
+                <button class="btn-primary" onclick="addBlacklist()">Blacklist User</button>
+            </div>
             <div id="blacklist">
                 <div class="empty-state">No blacklisted users</div>
             </div>
@@ -648,7 +733,6 @@
         function updateStats(stats) {
             document.getElementById('activeConversations').textContent = stats.activeConversations || 0;
             document.getElementById('totalMessages').textContent = stats.totalMessages || 0;
-            document.getElementById('errorCount').textContent = stats.errors || 0;
             document.getElementById('feedbackCount').textContent = stats.feedback || 0;
             document.getElementById('spamCount').textContent = stats.spam || 0;
             document.getElementById('bannedCount').textContent = stats.banned || 0;
@@ -765,10 +849,11 @@
                 <div class="blacklist-item">
                     <div class="blacklist-header">
                         <span class="blacklist-username">🔨 ${escapeHtml(bl.username)}</span>
-                        <span class="blacklist-badge">BLOCKED</span>
+                        <button class="btn-danger" onclick="removeBlacklist('${bl.userId}')">Unblacklist</button>
                     </div>
                     <div class="blacklist-info">
                         <div style="color: #a0a0a0; font-size: 0.85em;">
+                            User ID: ${bl.userId}<br>
                             Blocked by ${escapeHtml(bl.blockedBy)} • ${formatTime(bl.timestamp)}
                         </div>
                         <div class="blacklist-reason">Reason: ${escapeHtml(bl.reason)}</div>
@@ -898,6 +983,80 @@
             setTimeout(() => {
                 spamDiv.innerHTML = '<div class="empty-state">No spam detected</div>';
             }, spamItems.length * 50 + 300);
+        }
+
+        // Add user to blacklist
+        async function addBlacklist() {
+            const userId = document.getElementById('blacklistUserId').value.trim();
+            const username = document.getElementById('blacklistUsername').value.trim();
+            const reason = document.getElementById('blacklistReason').value.trim();
+
+            if (!userId) {
+                alert('Please enter a user ID');
+                return;
+            }
+
+            if (!reason) {
+                alert('Please enter a reason for blacklisting');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/blacklist', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        userId,
+                        username: username || `User ${userId}`,
+                        reason,
+                        blockedBy: 'Dashboard Admin'
+                    })
+                });
+
+                if (response.ok) {
+                    // Clear form
+                    document.getElementById('blacklistUserId').value = '';
+                    document.getElementById('blacklistUsername').value = '';
+                    document.getElementById('blacklistReason').value = '';
+
+                    // Refresh blacklist
+                    fetchBlacklist();
+                    fetchStats();
+                } else {
+                    const error = await response.text();
+                    alert('Failed to blacklist user: ' + error);
+                }
+            } catch (error) {
+                console.error('Error blacklisting user:', error);
+                alert('Failed to blacklist user');
+            }
+        }
+
+        // Remove user from blacklist
+        async function removeBlacklist(userId) {
+            if (!confirm(`Are you sure you want to unblacklist user ${userId}?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/blacklist/${userId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    // Refresh blacklist
+                    fetchBlacklist();
+                    fetchStats();
+                } else {
+                    const error = await response.text();
+                    alert('Failed to unblacklist user: ' + error);
+                }
+            } catch (error) {
+                console.error('Error unblacklisting user:', error);
+                alert('Failed to unblacklist user');
+            }
         }
 
         autoScrollToggle.addEventListener('click', () => {

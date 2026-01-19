@@ -25,6 +25,9 @@ export class DashboardServer {
   }
 
   setupRoutes() {
+    // Middleware for JSON parsing
+    this.app.use(express.json());
+
     // Serve static files from public directory
     this.app.use(express.static(join(__dirname, 'public')));
 
@@ -72,6 +75,54 @@ export class DashboardServer {
     // API endpoint to get blacklisted users
     this.app.get('/api/blacklist', (req, res) => {
       res.json(this.bot.spamFilter.getBlacklist());
+    });
+
+    // API endpoint to add user to blacklist
+    this.app.post('/api/blacklist', (req, res) => {
+      try {
+        const { userId, username, reason, blockedBy } = req.body;
+
+        if (!userId || !reason) {
+          return res.status(400).send('userId and reason are required');
+        }
+
+        this.bot.spamFilter.addToBlacklist(userId, username || `User ${userId}`, reason, blockedBy || 'Dashboard Admin');
+
+        // Broadcast update to all connected clients
+        this.broadcast({
+          type: 'blacklistUpdated',
+          data: { action: 'added', userId, username, reason }
+        });
+
+        res.json({ success: true, message: 'User blacklisted successfully' });
+      } catch (error) {
+        console.error('Error adding to blacklist:', error);
+        res.status(500).send('Internal server error');
+      }
+    });
+
+    // API endpoint to remove user from blacklist
+    this.app.delete('/api/blacklist/:userId', (req, res) => {
+      try {
+        const { userId } = req.params;
+
+        if (!userId) {
+          return res.status(400).send('userId is required');
+        }
+
+        this.bot.spamFilter.removeFromBlacklist(userId);
+
+        // Broadcast update to all connected clients
+        this.broadcast({
+          type: 'blacklistUpdated',
+          data: { action: 'removed', userId }
+        });
+
+        res.json({ success: true, message: 'User unblacklisted successfully' });
+      } catch (error) {
+        console.error('Error removing from blacklist:', error);
+        res.status(500).send('Internal server error');
+      }
     });
   }
 

@@ -44,7 +44,7 @@ class SupportBot extends EventEmitter {
   }
 
   setupEventHandlers() {
-    this.client.once('ready', () => {
+    this.client.once('clientReady', () => {
       console.log(`✓ Bot logged in as ${this.client.user.tag}`);
       console.log(`✓ Monitoring channel: ${this.config.supportChannelId}`);
       console.log(`✓ AI Model: ${this.config.aiModel}`);

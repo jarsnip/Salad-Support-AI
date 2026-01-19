@@ -17,6 +17,13 @@ const config = {
     cooldownPeriod: parseInt(process.env.SPAM_COOLDOWN) || 120000, // 2 minutes
     autoBanThreshold: parseInt(process.env.SPAM_AUTO_BAN_THRESHOLD) || 5,
     banDuration: parseInt(process.env.SPAM_BAN_DURATION) || 3600000 // 1 hour
+  },
+  autoEnd: {
+    enabled: process.env.AUTO_END_ENABLED !== 'false',
+    timeout: parseInt(process.env.AUTO_END_TIMEOUT) || 300000, // 5 minutes
+    threadDeleteAfterEnd: parseInt(process.env.THREAD_DELETE_AFTER_END) || 300000, // 5 minutes
+    threadDeleteAfterFeedback: parseInt(process.env.THREAD_DELETE_AFTER_FEEDBACK) || 120000, // 2 minutes
+    sendTranscripts: process.env.SEND_TRANSCRIPTS !== 'false'
   }
 };
 

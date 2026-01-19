@@ -30,9 +30,17 @@ class SupportBot extends EventEmitter {
 
     this.setupEventHandlers();
 
+    // Cleanup old conversations every hour
     setInterval(() => {
       this.conversationManager.cleanupOldConversations();
     }, 60 * 60 * 1000);
+
+    // Check for inactive conversations every minute (if auto-end is enabled)
+    if (config.autoEnd?.enabled) {
+      setInterval(() => {
+        this.checkInactiveConversations();
+      }, 60 * 1000);
+    }
   }
 
   setupEventHandlers() {
@@ -375,10 +383,27 @@ class SupportBot extends EventEmitter {
         // Mark conversation as ended
         this.conversationManager.endConversation(channel.id);
 
+        // Send transcript if enabled
+        if (this.config.autoEnd?.sendTranscripts) {
+          const originalPosterId = this.conversationManager.getConversation(channel.id).originalPosterId;
+          await this.sendTranscriptDM(channel.id, originalPosterId);
+        }
+
         await channel.setLocked(true);
         await channel.setArchived(true);
 
         console.log(`🔒 Thread ${channel.id} has been locked and archived`);
+
+        // Schedule thread deletion after feedback
+        const deleteTimeout = this.config.autoEnd?.threadDeleteAfterFeedback || 120000; // Default 2 minutes
+        setTimeout(async () => {
+          try {
+            await channel.delete();
+            console.log(`🗑️  Thread ${channel.id} deleted after feedback`);
+          } catch (err) {
+            console.error(`Error deleting thread ${channel.id}:`, err);
+          }
+        }, deleteTimeout);
       });
 
       collector.on('end', async (collected) => {
@@ -531,6 +556,85 @@ class SupportBot extends EventEmitter {
       } catch (replyError) {
         console.error('Error sending error reply:', replyError);
       }
+    }
+  }
+
+  async checkInactiveConversations() {
+    if (!this.config.autoEnd?.enabled) return;
+
+    const timeout = this.config.autoEnd.timeout || 300000; // Default 5 minutes
+    const inactive = this.conversationManager.getInactiveConversations(timeout);
+
+    for (const { threadId, conversation } of inactive) {
+      try {
+        const thread = await this.client.channels.fetch(threadId);
+        if (!thread) continue;
+
+        console.log(`⏰ Auto-ending inactive conversation in thread ${threadId}`);
+
+        // End the conversation
+        this.conversationManager.endConversation(threadId);
+
+        // Send transcript if enabled
+        if (this.config.autoEnd.sendTranscripts) {
+          await this.sendTranscriptDM(threadId, conversation.originalPosterId);
+        }
+
+        // Send message to thread
+        await thread.send('⏰ This conversation has been automatically closed due to inactivity. A transcript has been sent to your DMs.');
+
+        // Lock and archive thread
+        await thread.setLocked(true);
+        await thread.setArchived(true);
+
+        // Schedule thread deletion
+        const deleteTimeout = this.config.autoEnd.threadDeleteAfterEnd || 300000;
+        setTimeout(async () => {
+          try {
+            await thread.delete();
+            console.log(`🗑️  Thread ${threadId} deleted after auto-end`);
+          } catch (err) {
+            console.error(`Error deleting thread ${threadId}:`, err);
+          }
+        }, deleteTimeout);
+
+      } catch (error) {
+        console.error(`Error auto-ending conversation ${threadId}:`, error);
+        this.emit('error', error);
+      }
+    }
+  }
+
+  async sendTranscriptDM(threadId, userId) {
+    try {
+      const html = this.conversationManager.generateHTMLTranscript(threadId);
+      if (!html) {
+        console.log(`No transcript to send for thread ${threadId}`);
+        return;
+      }
+
+      const user = await this.client.users.fetch(userId);
+      if (!user) {
+        console.log(`Could not fetch user ${userId} for transcript`);
+        return;
+      }
+
+      // Create a buffer from the HTML
+      const buffer = Buffer.from(html, 'utf8');
+
+      await user.send({
+        content: '📄 Here is the transcript of your support conversation:',
+        files: [{
+          attachment: buffer,
+          name: `transcript-${threadId}.html`,
+          description: 'Support conversation transcript'
+        }]
+      });
+
+      console.log(`📧 Sent transcript to user ${user.tag} for thread ${threadId}`);
+    } catch (error) {
+      console.error(`Error sending transcript for thread ${threadId}:`, error);
+      // Don't emit error for DM failures (user might have DMs disabled)
     }
   }
 

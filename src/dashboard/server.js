@@ -75,6 +75,25 @@ export class DashboardServer {
       res.json(this.getDailyFeedback());
     });
 
+    // API endpoint to reset all feedback data
+    this.app.post('/api/feedback/reset', (req, res) => {
+      try {
+        this.feedbackData = [];
+        this.saveFeedback();
+        console.log('🔄 Feedback data has been reset');
+        res.json({ success: true, message: 'Feedback data reset successfully' });
+
+        // Broadcast update to all connected clients
+        this.broadcast({
+          type: 'feedbackReset',
+          data: { feedback: [] }
+        });
+      } catch (error) {
+        console.error('Error resetting feedback:', error);
+        res.status(500).json({ success: false, error: error.message });
+      }
+    });
+
     // API endpoint to get spam events
     this.app.get('/api/spam', (req, res) => {
       res.json(this.bot.spamFilter.getSpamEvents());
@@ -770,8 +789,11 @@ export class DashboardServer {
   getConversationsData() {
     const conversations = [];
     for (const [threadId, conversation] of this.bot.conversationManager.conversations.entries()) {
+      // Ensure threadId is a string (defensive coding)
+      const threadIdString = String(threadId);
+
       conversations.push({
-        threadId,
+        threadId: threadIdString,
         messageCount: conversation.messages.length,
         createdAt: conversation.createdAt,
         lastActivity: conversation.lastActivity,

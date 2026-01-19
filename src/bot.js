@@ -806,23 +806,27 @@ class SupportBot extends EventEmitter {
 
   async endConversationFromDashboard(threadId) {
     try {
-      const thread = await this.client.channels.fetch(threadId);
+      // Ensure threadId is a string
+      const threadIdString = String(threadId);
+      console.log(`🛑 Dashboard end request for thread: ${threadIdString} (type: ${typeof threadId})`);
+
+      const thread = await this.client.channels.fetch(threadIdString);
 
       if (!thread) {
-        throw new Error(`Thread ${threadId} not found`);
+        throw new Error(`Thread ${threadIdString} not found`);
       }
 
       if (!thread.isThread()) {
-        throw new Error(`Channel ${threadId} is not a thread`);
+        throw new Error(`Channel ${threadIdString} is not a thread`);
       }
 
-      const conversation = this.conversationManager.getConversation(threadId);
+      const conversation = this.conversationManager.getConversation(threadIdString);
 
       if (conversation.ended) {
         throw new Error('Conversation already ended');
       }
 
-      console.log(`🛑 Ending conversation from dashboard: ${threadId}`);
+      console.log(`🛑 Ending conversation from dashboard: ${threadIdString}`);
 
       // Get the original poster to ping them
       const userMention = conversation.originalPosterId ? `<@${conversation.originalPosterId}>` : '';
@@ -848,10 +852,10 @@ class SupportBot extends EventEmitter {
       collector.on('collect', async (reaction, user) => {
         const feedbackType = reaction.emoji.name === '👍' ? 'positive' : 'negative';
 
-        console.log(`📊 Feedback received: ${feedbackType} from ${user.tag} in thread ${threadId}`);
+        console.log(`📊 Feedback received: ${feedbackType} from ${user.tag} in thread ${threadIdString}`);
 
         const feedbackData = {
-          threadId: threadId,
+          threadId: threadIdString,
           userId: user.id,
           username: user.tag,
           type: feedbackType,
@@ -861,43 +865,43 @@ class SupportBot extends EventEmitter {
         this.emit('feedbackReceived', feedbackData);
 
         // Store feedback in conversation before ending
-        this.conversationManager.setFeedback(threadId, feedbackData);
+        this.conversationManager.setFeedback(threadIdString, feedbackData);
 
         await thread.send(`Thank you for your feedback! ${feedbackType === 'positive' ? 'Glad we could help!' : 'A human agent will follow up with you shortly.'}`);
 
         // Mark conversation as ended
-        this.conversationManager.endConversation(threadId);
+        this.conversationManager.endConversation(threadIdString);
 
         // Emit conversation ended event for dashboard
         this.emit('conversationEnded', {
-          threadId: threadId,
+          threadId: threadIdString,
           reason: 'dashboard',
           timestamp: Date.now()
         });
 
         // Send transcript if enabled
         if (this.config.autoEnd?.sendTranscripts && conversation.originalPosterId) {
-          await this.sendTranscriptDM(threadId, conversation.originalPosterId);
+          await this.sendTranscriptDM(threadIdString, conversation.originalPosterId);
         }
 
         // If negative feedback and follow-up channel configured, notify support team
         if (feedbackType === 'negative' && this.config.negativeFeedbackChannelId) {
-          await this.sendNegativeFeedbackAlert(threadId, user);
+          await this.sendNegativeFeedbackAlert(threadIdString, user);
         }
 
         await thread.setLocked(true);
         await thread.setArchived(true);
 
-        console.log(`🔒 Thread ${threadId} has been locked and archived from dashboard`);
+        console.log(`🔒 Thread ${threadIdString} has been locked and archived from dashboard`);
 
         // Schedule thread deletion after feedback
         const deleteTimeout = this.config.autoEnd?.threadDeleteAfterFeedback || 120000; // Default 2 minutes
         setTimeout(async () => {
           try {
             await thread.delete();
-            console.log(`🗑️  Thread ${threadId} deleted after dashboard end`);
+            console.log(`🗑️  Thread ${threadIdString} deleted after dashboard end`);
           } catch (err) {
-            console.error(`Error deleting thread ${threadId}:`, err);
+            console.error(`Error deleting thread ${threadIdString}:`, err);
           }
         }, deleteTimeout);
       });

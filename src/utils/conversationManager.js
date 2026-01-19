@@ -181,10 +181,10 @@ class ConversationManager {
             --border-color: #ddd;
             --header-gradient-start: #667eea;
             --header-gradient-end: #764ba2;
-            --accent-color: #90FF75;
-            --accent-hover: #7ce65e;
+            --accent-color: #102c80;
+            --accent-hover: #1a3ba0;
             --footer-text: #999;
-            --positive-color: #90FF75;
+            --positive-color: #102c80;
             --negative-color: #ff6b6b;
         }
 
@@ -196,10 +196,10 @@ class ConversationManager {
             --border-color: #3a3a52;
             --header-gradient-start: #1a1a2e;
             --header-gradient-end: #16213e;
-            --accent-color: #90FF75;
-            --accent-hover: #7ce65e;
+            --accent-color: #102c80;
+            --accent-hover: #1a3ba0;
             --footer-text: #888;
-            --positive-color: #90FF75;
+            --positive-color: #102c80;
             --negative-color: #ff6b6b;
         }
 

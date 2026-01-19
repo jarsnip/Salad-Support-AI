@@ -72,8 +72,9 @@ class ConfigManager {
         category: 'Bot',
         description: 'Claude AI model to use',
         required: false,
-        default: 'claude-sonnet-4-20250514',
+        default: 'claude-3-5-haiku-20241022',
         options: [
+          'claude-3-5-haiku-20241022',
           'claude-sonnet-4-20250514',
           'claude-opus-4-5-20251101',
           'claude-3-5-sonnet-20241022'

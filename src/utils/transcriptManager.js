@@ -18,7 +18,7 @@ class TranscriptManager {
    * Save a conversation transcript to disk
    * @param {Object} conversation - Conversation object from ConversationManager
    */
-  saveTranscript(conversation) {
+  async saveTranscript(conversation) {
     try {
       const transcriptData = {
         threadId: conversation.threadId || 'unknown',
@@ -39,7 +39,7 @@ class TranscriptManager {
       const filename = `${transcriptData.threadId}.json`;
       const filepath = path.join(this.transcriptsDir, filename);
 
-      fs.writeFileSync(filepath, JSON.stringify(transcriptData, null, 2));
+      await fs.promises.writeFile(filepath, JSON.stringify(transcriptData, null, 2));
       console.log(`📝 Saved transcript: ${filename}`);
 
       return true;

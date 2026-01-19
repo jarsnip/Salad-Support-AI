@@ -398,7 +398,7 @@ class SupportBot extends EventEmitter {
         await channel.send(`Thank you for your feedback! ${feedbackType === 'positive' ? 'Glad we could help!' : 'A human agent will follow up with you shortly.'}`);
 
         // Mark conversation as ended
-        this.conversationManager.endConversation(channel.id);
+        await this.conversationManager.endConversation(channel.id);
 
         // Emit conversation ended event for dashboard
         this.emit('conversationEnded', {
@@ -645,7 +645,7 @@ class SupportBot extends EventEmitter {
           await thread.send(`Thank you for your feedback! ${feedbackType === 'positive' ? 'Glad we could help!' : 'A human agent will follow up with you shortly.'}`);
 
           // Mark conversation as ended
-          this.conversationManager.endConversation(threadId);
+          await this.conversationManager.endConversation(threadId);
 
           // Emit conversation ended event for dashboard
           this.emit('conversationEnded', {
@@ -687,7 +687,7 @@ class SupportBot extends EventEmitter {
             await thread.send('No feedback received. This conversation has been closed due to inactivity.');
 
             // Mark conversation as ended
-            this.conversationManager.endConversation(threadId);
+            await this.conversationManager.endConversation(threadId);
 
             // Emit conversation ended event for dashboard
             this.emit('conversationEnded', {
@@ -874,7 +874,7 @@ class SupportBot extends EventEmitter {
         await thread.send(`Thank you for your feedback! ${feedbackType === 'positive' ? 'Glad we could help!' : 'A human agent will follow up with you shortly.'}`);
 
         // Mark conversation as ended
-        this.conversationManager.endConversation(threadIdString);
+        await this.conversationManager.endConversation(threadIdString);
 
         // Emit conversation ended event for dashboard
         this.emit('conversationEnded', {

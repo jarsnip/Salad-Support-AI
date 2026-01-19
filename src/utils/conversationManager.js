@@ -26,12 +26,12 @@ class ConversationManager {
     return this.conversations.get(threadId);
   }
 
-  endConversation(threadId) {
+  async endConversation(threadId) {
     const conversation = this.getConversation(threadId);
 
     // Save transcript before marking as ended
     if (!conversation.ended && conversation.messages.length > 0) {
-      this.transcriptManager.saveTranscript(conversation);
+      await this.transcriptManager.saveTranscript(conversation);
     }
 
     conversation.ended = true;

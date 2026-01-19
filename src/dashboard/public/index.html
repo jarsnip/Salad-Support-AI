@@ -15,25 +15,25 @@
             --panel-bg: white;
             --panel-border: #dee2e6;
             --card-bg: #f8f9fa;
-            --stat-value-color: #32cd32;
-            --accent-color: #32cd32;
-            --accent-hover: #28a428;
-            --heading-color: #32cd32;
+            --stat-value-color: #90FF75;
+            --accent-color: #90FF75;
+            --accent-hover: #7ce65e;
+            --heading-color: #90FF75;
             --border-color: #dee2e6;
-            --message-user-border: #32cd32;
+            --message-user-border: #90FF75;
             --message-assistant-border: #667eea;
             --message-assistant-bg: #f0f4ff;
             --error-bg: #ffe6e6;
             --error-border: #ff6b6b;
             --spam-bg: #ffe6e6;
             --blacklist-bg: #ffe6e6;
-            --button-primary-bg: #32cd32;
-            --button-primary-text: white;
+            --button-primary-bg: #90FF75;
+            --button-primary-text: #1a1a2e;
             --button-danger-bg: #ef4444;
             --muted-text: #6c757d;
             --status-online: #28a745;
             --status-offline: #dc3545;
-            --positive-color: #32cd32;
+            --positive-color: #90FF75;
             --negative-color: #f87171;
         }
 
@@ -44,25 +44,25 @@
             --panel-bg: #252b48;
             --panel-border: #3a4266;
             --card-bg: #1e2438;
-            --stat-value-color: #32cd32;
-            --accent-color: #32cd32;
-            --accent-hover: #28a428;
-            --heading-color: #32cd32;
+            --stat-value-color: #90FF75;
+            --accent-color: #90FF75;
+            --accent-hover: #7ce65e;
+            --heading-color: #90FF75;
             --border-color: #3a4266;
-            --message-user-border: #32cd32;
+            --message-user-border: #90FF75;
             --message-assistant-border: #667eea;
             --message-assistant-bg: #252538;
             --error-bg: #3d2020;
             --error-border: #ff6b6b;
             --spam-bg: #3d2020;
             --blacklist-bg: #3d2020;
-            --button-primary-bg: #32cd32;
-            --button-primary-text: white;
+            --button-primary-bg: #90FF75;
+            --button-primary-text: #1a1a2e;
             --button-danger-bg: #ef4444;
             --muted-text: #a0a0a0;
             --status-online: #28a745;
             --status-offline: #dc3545;
-            --positive-color: #4ade80;
+            --positive-color: #90FF75;
             --negative-color: #f87171;
         }
 
@@ -106,7 +106,7 @@
             height: 50px;
             font-size: 1.5em;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(50, 205, 50, 0.3);
+            box-shadow: 0 4px 12px rgba(144, 255, 117, 0.3);
             z-index: 1000;
         }
 
@@ -186,13 +186,58 @@
             padding: 15px;
             margin-bottom: 15px;
             border-radius: 8px;
-            cursor: pointer;
             transition: all 0.2s;
         }
 
         .conversation-item:hover {
             background: var(--panel-bg);
             transform: translateX(5px);
+        }
+
+        .conversation-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.8em;
+            font-weight: 600;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-view {
+            background: var(--accent-color);
+            color: var(--button-primary-text);
+        }
+
+        .btn-view:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-link {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-link:hover {
+            background: #5568d3;
+        }
+
+        .btn-end {
+            background: var(--button-danger-bg);
+            color: white;
+        }
+
+        .btn-end:hover {
+            background: #dc2626;
         }
 
         .conversation-header {
@@ -619,14 +664,14 @@
             cursor: pointer;
             font-size: 1em;
             font-weight: 600;
-            box-shadow: 0 4px 12px rgba(50, 205, 50, 0.4);
+            box-shadow: 0 4px 12px rgba(144, 255, 117, 0.4);
             transition: all 0.2s;
         }
 
         .auto-scroll-toggle:hover {
             background: var(--accent-hover);
             transform: scale(1.05);
-            box-shadow: 0 6px 16px rgba(50, 205, 50, 0.5);
+            box-shadow: 0 6px 16px rgba(144, 255, 117, 0.5);
         }
 
         .auto-scroll-toggle.disabled {
@@ -653,9 +698,78 @@
             transform: translateY(-2px);
         }
 
+        .feedback-graph {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            height: 200px;
+            padding: 20px 10px;
+            gap: 8px;
+        }
+
+        .graph-bar {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            min-width: 40px;
+        }
+
+        .bar-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            height: 150px;
+            position: relative;
+        }
+
+        .bar {
+            width: 80%;
+            background: linear-gradient(180deg, var(--accent-color) 0%, var(--accent-hover) 100%);
+            border-radius: 4px 4px 0 0;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .bar.negative {
+            background: linear-gradient(180deg, var(--negative-color) 0%, #dc2626 100%);
+        }
+
+        .bar:hover {
+            opacity: 0.8;
+            transform: scaleY(1.05);
+        }
+
+        .bar-value {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.85em;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+
+        .bar-label {
+            font-size: 0.75em;
+            color: var(--muted-text);
+            text-align: center;
+        }
+
         @media (max-width: 768px) {
             .content-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .feedback-graph {
+                gap: 4px;
+            }
+
+            .graph-bar {
+                min-width: 30px;
             }
         }
     </style>
@@ -725,6 +839,13 @@
         </div>
 
         <div class="panel">
+            <h2>📊 Feedback Over Time (Last 10 Days)</h2>
+            <div id="feedbackGraph">
+                <div class="empty-state">Loading feedback data...</div>
+            </div>
+        </div>
+
+        <div class="panel">
             <div class="panel-header">
                 <h2>🚫 Spam Detection</h2>
                 <button class="clear-all-btn" onclick="clearAllSpam()">Clear All</button>
@@ -765,6 +886,7 @@
         let reconnectTimeout;
         let showAllErrors = false;
         let showAllSpam = false;
+        let guildId = null;
         const autoClearTimers = new Map(); // timestamp -> timeoutId
 
         const statusIndicator = document.getElementById('statusIndicator');
@@ -810,12 +932,16 @@
         function handleMessage(message) {
             switch (message.type) {
                 case 'init':
+                    if (message.data.guildId) {
+                        guildId = message.data.guildId;
+                    }
                     updateStats(message.data.stats);
                     updateConversations(message.data.conversations);
                     updateErrors(message.data.errors);
                     updateFeedback(message.data.feedback);
                     updateSpam(message.data.spam);
                     updateBlacklist(message.data.blacklist);
+                    fetchFeedbackGraph();
                     break;
                 case 'messageProcessed':
                 case 'conversationCreated':
@@ -860,30 +986,35 @@
                 return;
             }
 
-            conversationsDiv.innerHTML = activeConversations.map(conv => `
-                <div class="conversation-item" onclick="toggleMessages('${conv.threadId}')">
-                    <div class="conversation-header">
-                        <span class="thread-id">Thread: ${conv.threadId}</span>
-                        <span class="message-count">${conv.messageCount} messages</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px;">
-                        <div style="color: #8b9eff; font-weight: 500; font-size: 0.9em;">
-                            👤 ${escapeHtml(conv.originalPoster)}
+            conversationsDiv.innerHTML = activeConversations.map(conv => {
+                const discordLink = guildId ? `https://discord.com/channels/${guildId}/${conv.threadId}` : null;
+                return `
+                    <div class="conversation-item">
+                        <div class="conversation-header">
+                            <span class="thread-id">Thread: ${conv.threadId}</span>
+                            <span class="message-count">${conv.messageCount} messages</span>
                         </div>
-                        <div class="conversation-time">
-                            ${formatTime(conv.lastActivity)}
-                        </div>
-                    </div>
-                    <div id="messages-${conv.threadId}" style="display: none; margin-top: 15px;">
-                        ${conv.messages.map(msg => `
-                            <div class="message-item ${msg.role}">
-                                <div class="message-role">${msg.role}</div>
-                                <div class="message-content">${escapeHtml(msg.content.substring(0, 200))}${msg.content.length > 200 ? '...' : ''}</div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px;">
+                            <div style="color: #8b9eff; font-weight: 500; font-size: 0.9em;">
+                                👤 ${escapeHtml(conv.originalPoster)}
                             </div>
-                        `).join('')}
+                            <div class="conversation-time">
+                                ${formatTime(conv.lastActivity)}
+                            </div>
+                        </div>
+                        <div class="conversation-actions">
+                            <a href="/conversation.html?threadId=${conv.threadId}${guildId ? '&guildId=' + guildId : ''}"
+                               target="_blank" class="btn-small btn-view">
+                                👁️ View Live
+                            </a>
+                            ${discordLink ? `<a href="${discordLink}" target="_blank" class="btn-small btn-link">🔗 Discord</a>` : ''}
+                            <button class="btn-small btn-end" onclick="endConversation('${conv.threadId}')">
+                                ⏹️ End
+                            </button>
+                        </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         function updateErrors(errors) {
@@ -1023,10 +1154,68 @@
             `).join('');
         }
 
-        function toggleMessages(threadId) {
-            const messagesDiv = document.getElementById(`messages-${threadId}`);
-            if (messagesDiv) {
-                messagesDiv.style.display = messagesDiv.style.display === 'none' ? 'block' : 'none';
+        function updateFeedbackGraph(dailyData) {
+            const feedbackGraphDiv = document.getElementById('feedbackGraph');
+
+            if (!dailyData || dailyData.length === 0) {
+                feedbackGraphDiv.innerHTML = '<div class="empty-state">No feedback data available</div>';
+                return;
+            }
+
+            // Find max absolute value for scaling
+            const maxValue = Math.max(...dailyData.map(d => Math.abs(d.overall)), 1);
+
+            feedbackGraphDiv.innerHTML = `
+                <div class="feedback-graph">
+                    ${dailyData.map(day => {
+                        const barHeight = (Math.abs(day.overall) / maxValue) * 100;
+                        const isNegative = day.overall < 0;
+                        return `
+                            <div class="graph-bar">
+                                <div class="bar-container">
+                                    <div class="bar ${isNegative ? 'negative' : ''}"
+                                         style="height: ${barHeight}%"
+                                         title="${day.date}: ${day.overall >= 0 ? '+' : ''}${day.overall} (👍${day.positive} 👎${day.negative})">
+                                        <span class="bar-value">${day.overall >= 0 ? '+' : ''}${day.overall}</span>
+                                    </div>
+                                </div>
+                                <div class="bar-label">${day.date}</div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
+        }
+
+        async function endConversation(threadId) {
+            if (!confirm('Are you sure you want to end this conversation?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/conversations/${threadId}/end`, {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    fetchConversations();
+                    fetchStats();
+                } else {
+                    alert('Failed to end conversation');
+                }
+            } catch (error) {
+                console.error('Error ending conversation:', error);
+                alert('Failed to end conversation');
+            }
+        }
+
+        async function fetchFeedbackGraph() {
+            try {
+                const response = await fetch('/api/feedback/daily');
+                const dailyData = await response.json();
+                updateFeedbackGraph(dailyData);
+            } catch (error) {
+                console.error('Error fetching feedback graph:', error);
             }
         }
 

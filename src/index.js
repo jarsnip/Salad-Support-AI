@@ -4,7 +4,9 @@ import { DashboardServer } from './dashboard/server.js';
 
 const config = {
   discordToken: process.env.DISCORD_TOKEN,
+  guildId: process.env.GUILD_ID,
   supportChannelId: process.env.SUPPORT_CHANNEL_ID,
+  negativeFeedbackChannelId: process.env.NEGATIVE_FEEDBACK_CHANNEL_ID,
   anthropicApiKey: process.env.ANTHROPIC_API_KEY,
   aiModel: process.env.AI_MODEL || 'claude-sonnet-4-20250514',
   maxConversationHistory: parseInt(process.env.MAX_CONVERSATION_HISTORY) || 10,

@@ -158,8 +158,8 @@ class ConversationManager {
             --border-color: #ddd;
             --header-gradient-start: #667eea;
             --header-gradient-end: #764ba2;
-            --accent-color: #32cd32;
-            --accent-hover: #28a428;
+            --accent-color: #90FF75;
+            --accent-hover: #7ce65e;
             --footer-text: #999;
         }
 
@@ -171,8 +171,8 @@ class ConversationManager {
             --border-color: #3a3a52;
             --header-gradient-start: #1a1a2e;
             --header-gradient-end: #16213e;
-            --accent-color: #32cd32;
-            --accent-hover: #28a428;
+            --accent-color: #90FF75;
+            --accent-hover: #7ce65e;
             --footer-text: #888;
         }
 
@@ -201,7 +201,7 @@ class ConversationManager {
             height: 50px;
             font-size: 1.5em;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(50, 205, 50, 0.3);
+            box-shadow: 0 4px 12px rgba(144, 255, 117, 0.3);
             z-index: 1000;
         }
 

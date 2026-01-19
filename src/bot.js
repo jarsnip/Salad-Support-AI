@@ -396,6 +396,11 @@ class SupportBot extends EventEmitter {
           await this.sendTranscriptDM(channel.id, originalPosterId);
         }
 
+        // If negative feedback and follow-up channel configured, notify support team
+        if (feedbackType === 'negative' && this.config.negativeFeedbackChannelId) {
+          await this.sendNegativeFeedbackAlert(channel.id, user);
+        }
+
         await channel.setLocked(true);
         await channel.setArchived(true);
 
@@ -649,6 +654,113 @@ class SupportBot extends EventEmitter {
     } catch (error) {
       console.error(`Error sending transcript for thread ${threadId}:`, error);
       // Don't emit error for DM failures (user might have DMs disabled)
+    }
+  }
+
+  async sendNegativeFeedbackAlert(threadId, user) {
+    try {
+      const followUpChannel = await this.client.channels.fetch(this.config.negativeFeedbackChannelId);
+      if (!followUpChannel) {
+        console.error(`Negative feedback channel ${this.config.negativeFeedbackChannelId} not found`);
+        return;
+      }
+
+      const conversation = this.conversationManager.getConversation(threadId);
+      const html = this.conversationManager.generateHTMLTranscript(threadId);
+
+      // Create Discord thread URL
+      const guildId = this.config.guildId;
+      const threadUrl = `https://discord.com/channels/${guildId}/${threadId}`;
+
+      // Create message embed-style content
+      let messageContent = `🚨 **Negative Feedback Alert**\n\n`;
+      messageContent += `**User:** ${user.tag} (${user.id})\n`;
+      messageContent += `**Thread:** ${threadUrl}\n`;
+      messageContent += `**Original Poster:** ${conversation.originalPosterUsername || 'Unknown'}\n`;
+      messageContent += `**Messages:** ${conversation.messages.length}\n`;
+      messageContent += `**Started:** <t:${Math.floor(conversation.createdAt / 1000)}:R>\n\n`;
+      messageContent += `⚠️ This user indicated they need more help. Please review and follow up.`;
+
+      // Send alert message with transcript attachment
+      if (html) {
+        const buffer = Buffer.from(html, 'utf8');
+        await followUpChannel.send({
+          content: messageContent,
+          files: [{
+            attachment: buffer,
+            name: `transcript-${threadId}.html`,
+            description: 'Conversation transcript'
+          }]
+        });
+      } else {
+        await followUpChannel.send(messageContent);
+      }
+
+      console.log(`📢 Sent negative feedback alert to follow-up channel for thread ${threadId}`);
+    } catch (error) {
+      console.error(`Error sending negative feedback alert for thread ${threadId}:`, error);
+      this.emit('error', error);
+    }
+  }
+
+  async endConversationFromDashboard(threadId) {
+    try {
+      const thread = await this.client.channels.fetch(threadId);
+
+      if (!thread) {
+        throw new Error(`Thread ${threadId} not found`);
+      }
+
+      if (!thread.isThread()) {
+        throw new Error(`Channel ${threadId} is not a thread`);
+      }
+
+      const conversation = this.conversationManager.getConversation(threadId);
+
+      if (conversation.ended) {
+        throw new Error('Conversation already ended');
+      }
+
+      console.log(`🛑 Ending conversation from dashboard: ${threadId}`);
+
+      // Mark conversation as ended
+      this.conversationManager.endConversation(threadId);
+
+      // Emit conversation ended event for dashboard
+      this.emit('conversationEnded', {
+        threadId: threadId,
+        reason: 'dashboard',
+        timestamp: Date.now()
+      });
+
+      // Send transcript if enabled
+      if (this.config.autoEnd?.sendTranscripts && conversation.originalPosterId) {
+        await this.sendTranscriptDM(threadId, conversation.originalPosterId);
+      }
+
+      // Send message to thread
+      await thread.send('🛑 This conversation has been closed by support staff. A transcript has been sent to your DMs. Thank you for reaching out!');
+
+      // Lock and archive thread
+      await thread.setLocked(true);
+      await thread.setArchived(true);
+
+      console.log(`🔒 Thread ${threadId} has been locked and archived from dashboard`);
+
+      // Schedule thread deletion
+      const deleteTimeout = this.config.autoEnd?.threadDeleteAfterEnd || 300000;
+      setTimeout(async () => {
+        try {
+          await thread.delete();
+          console.log(`🗑️  Thread ${threadId} deleted after dashboard end`);
+        } catch (err) {
+          console.error(`Error deleting thread ${threadId}:`, err);
+        }
+      }, deleteTimeout);
+
+    } catch (error) {
+      console.error(`Error ending conversation from dashboard ${threadId}:`, error);
+      throw error; // Re-throw to be handled by the API endpoint
     }
   }
 

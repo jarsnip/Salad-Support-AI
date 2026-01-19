@@ -7,6 +7,8 @@ import fs from 'fs';
 import multer from 'multer';
 import path from 'path';
 import archiver from 'archiver';
+import cookieParser from 'cookie-parser';
+import crypto from 'crypto';
 import docsManager from '../utils/docsManager.js';
 import ConfigManager from '../utils/configManager.js';
 import configPersistence from '../utils/configPersistence.js';
@@ -28,6 +30,15 @@ export class DashboardServer {
     this.feedbackFile = join(process.cwd(), 'data', 'feedback.json');
     this.configManager = new ConfigManager();
 
+    // Authentication
+    this.dashboardPassword = process.env.DASHBOARD_PASSWORD || null;
+    this.sessionTokens = new Map(); // token -> { expires, rememberDevice }
+    this.tokenExpiry = 30 * 24 * 60 * 60 * 1000; // 30 days for remember device
+
+    if (!this.dashboardPassword) {
+      console.warn('⚠️  No DASHBOARD_PASSWORD set. Dashboard will be publicly accessible!');
+    }
+
     this.loadFeedback();
     this.setupRoutes();
     this.setupWebSocket();
@@ -35,10 +46,113 @@ export class DashboardServer {
   }
 
   setupRoutes() {
-    // Middleware for JSON parsing
+    // Middleware for JSON and cookie parsing
     this.app.use(express.json());
+    this.app.use(cookieParser());
 
-    // Serve static files from public directory
+    // ==== AUTHENTICATION ROUTES (PUBLIC) ====
+
+    // Serve login page
+    this.app.get('/login', (req, res) => {
+      res.sendFile(join(__dirname, 'public', 'login.html'));
+    });
+
+    // Login endpoint
+    this.app.post('/auth/login', (req, res) => {
+      const { password, rememberDevice } = req.body;
+
+      // If no password is set, allow access
+      if (!this.dashboardPassword) {
+        const token = this.generateSessionToken();
+        const expires = Date.now() + (rememberDevice ? this.tokenExpiry : 24 * 60 * 60 * 1000);
+
+        this.sessionTokens.set(token, { expires, rememberDevice: !!rememberDevice });
+
+        res.cookie('dashboard_session', token, {
+          httpOnly: true,
+          maxAge: rememberDevice ? this.tokenExpiry : 24 * 60 * 60 * 1000,
+          sameSite: 'strict'
+        });
+
+        return res.json({ success: true });
+      }
+
+      // Check password
+      if (password === this.dashboardPassword) {
+        // Generate session token
+        const token = this.generateSessionToken();
+        const expires = Date.now() + (rememberDevice ? this.tokenExpiry : 24 * 60 * 60 * 1000);
+
+        this.sessionTokens.set(token, { expires, rememberDevice: !!rememberDevice });
+
+        // Set cookie
+        res.cookie('dashboard_session', token, {
+          httpOnly: true,
+          maxAge: rememberDevice ? this.tokenExpiry : 24 * 60 * 60 * 1000,
+          sameSite: 'strict'
+        });
+
+        return res.json({ success: true });
+      } else {
+        return res.status(401).json({ error: 'Invalid password' });
+      }
+    });
+
+    // Logout endpoint
+    this.app.post('/auth/logout', (req, res) => {
+      const token = req.cookies.dashboard_session;
+      if (token) {
+        this.sessionTokens.delete(token);
+      }
+      res.clearCookie('dashboard_session');
+      res.json({ success: true });
+    });
+
+    // ==== PROTECTED ROUTES (REQUIRE AUTH) ====
+
+    // Authentication middleware for all other routes
+    this.app.use((req, res, next) => {
+      // Skip auth for static files (CSS, JS, images)
+      if (req.path.match(/\.(css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/)) {
+        return next();
+      }
+
+      // Skip auth if no password is set
+      if (!this.dashboardPassword) {
+        return next();
+      }
+
+      // Check session token
+      const token = req.cookies.dashboard_session;
+
+      if (!token || !this.sessionTokens.has(token)) {
+        return res.redirect('/login');
+      }
+
+      const session = this.sessionTokens.get(token);
+
+      // Check if token is expired
+      if (Date.now() > session.expires) {
+        this.sessionTokens.delete(token);
+        res.clearCookie('dashboard_session');
+        return res.redirect('/login');
+      }
+
+      // Token is valid, proceed
+      next();
+    });
+
+    // Redirect root to dashboard
+    this.app.get('/', (req, res) => {
+      res.redirect('/dashboard');
+    });
+
+    // Serve dashboard page
+    this.app.get('/dashboard', (req, res) => {
+      res.sendFile(join(__dirname, 'public', 'index.html'));
+    });
+
+    // Serve static files from public directory (after auth middleware)
     this.app.use(express.static(join(__dirname, 'public')));
 
     // API endpoint to get current conversations
@@ -1035,13 +1149,46 @@ export class DashboardServer {
     return new Promise((resolve) => {
       this.server.listen(this.port, () => {
         console.log(`📊 Dashboard server running at http://localhost:${this.port}`);
+
+        if (this.dashboardPassword) {
+          console.log('🔐 Dashboard authentication enabled');
+          console.log(`   Access at: http://localhost:${this.port}/login`);
+
+          // Cleanup expired sessions every hour
+          this.sessionCleanupInterval = setInterval(() => {
+            this.cleanupExpiredSessions();
+          }, 60 * 60 * 1000);
+        } else {
+          console.log('⚠️  Dashboard authentication DISABLED - publicly accessible!');
+          console.log(`   Access at: http://localhost:${this.port}/dashboard`);
+        }
+
         resolve();
       });
     });
   }
 
+  // Authentication helper methods
+  generateSessionToken() {
+    return crypto.randomBytes(32).toString('hex');
+  }
+
+  cleanupExpiredSessions() {
+    const now = Date.now();
+    for (const [token, session] of this.sessionTokens.entries()) {
+      if (now > session.expires) {
+        this.sessionTokens.delete(token);
+      }
+    }
+  }
+
   stop() {
     return new Promise((resolve) => {
+      // Clear cleanup interval
+      if (this.sessionCleanupInterval) {
+        clearInterval(this.sessionCleanupInterval);
+      }
+
       this.clients.forEach(client => client.close());
       this.wss.close();
       this.server.close(() => {

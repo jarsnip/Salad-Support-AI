@@ -4,17 +4,79 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Salad Support AI - Live Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-gradient-start: #f8f9fa;
+            --bg-gradient-end: #e9ecef;
+            --text-color: #333;
+            --panel-bg: white;
+            --panel-border: #dee2e6;
+            --card-bg: #f8f9fa;
+            --stat-value-color: #32cd32;
+            --accent-color: #32cd32;
+            --accent-hover: #28a428;
+            --heading-color: #32cd32;
+            --border-color: #dee2e6;
+            --message-user-border: #32cd32;
+            --message-assistant-border: #667eea;
+            --message-assistant-bg: #f0f4ff;
+            --error-bg: #ffe6e6;
+            --error-border: #ff6b6b;
+            --spam-bg: #ffe6e6;
+            --blacklist-bg: #ffe6e6;
+            --button-primary-bg: #32cd32;
+            --button-primary-text: white;
+            --button-danger-bg: #ef4444;
+            --muted-text: #6c757d;
+            --status-online: #28a745;
+            --status-offline: #dc3545;
+            --positive-color: #32cd32;
+            --negative-color: #f87171;
+        }
+
+        [data-theme="dark"] {
+            --bg-gradient-start: #1a1a2e;
+            --bg-gradient-end: #16213e;
+            --text-color: #e0e0e0;
+            --panel-bg: #252b48;
+            --panel-border: #3a4266;
+            --card-bg: #1e2438;
+            --stat-value-color: #32cd32;
+            --accent-color: #32cd32;
+            --accent-hover: #28a428;
+            --heading-color: #32cd32;
+            --border-color: #3a4266;
+            --message-user-border: #32cd32;
+            --message-assistant-border: #667eea;
+            --message-assistant-bg: #252538;
+            --error-bg: #3d2020;
+            --error-border: #ff6b6b;
+            --spam-bg: #3d2020;
+            --blacklist-bg: #3d2020;
+            --button-primary-bg: #32cd32;
+            --button-primary-text: white;
+            --button-danger-bg: #ef4444;
+            --muted-text: #a0a0a0;
+            --status-online: #28a745;
+            --status-offline: #dc3545;
+            --positive-color: #4ade80;
+            --negative-color: #f87171;
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            color: #e0e0e0;
+            font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            color: var(--text-color);
             min-height: 100vh;
             padding: 20px;
         }
@@ -25,11 +87,32 @@
         }
 
         h1 {
-            color: white;
+            color: var(--heading-color);
             text-align: center;
             margin-bottom: 30px;
             font-size: 2.5em;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 1.5em;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(50, 205, 50, 0.3);
+            z-index: 1000;
+        }
+
+        .theme-toggle:hover {
+            background: var(--accent-hover);
+            transform: scale(1.1);
         }
 
         .stats-grid {
@@ -46,13 +129,13 @@
         }
 
         .stat-card {
-            background: #252b48;
+            background: var(--panel-bg);
             border-radius: 12px;
             padding: 20px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
             text-align: center;
-            transition: transform 0.2s;
-            border: 1px solid #3a4266;
+            transition: transform 0.2s, background-color 0.3s ease, border-color 0.3s ease;
+            border: 1px solid var(--panel-border);
         }
 
         .stat-card:hover {
@@ -62,12 +145,12 @@
         .stat-value {
             font-size: 2.5em;
             font-weight: bold;
-            color: #8b9eff;
+            color: var(--stat-value-color);
             margin-bottom: 5px;
         }
 
         .stat-label {
-            color: #a0a0a0;
+            color: var(--muted-text);
             font-size: 0.9em;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -81,25 +164,25 @@
         }
 
         .panel {
-            background: #252b48;
+            background: var(--panel-bg);
             border-radius: 12px;
             padding: 25px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            border: 1px solid #3a4266;
+            border: 1px solid var(--panel-border);
             margin-bottom: 25px;
         }
 
         .panel h2 {
-            color: #8b9eff;
+            color: var(--heading-color);
             margin-bottom: 20px;
             font-size: 1.5em;
-            border-bottom: 2px solid #3a4266;
+            border-bottom: 2px solid var(--border-color);
             padding-bottom: 10px;
         }
 
         .conversation-item {
-            background: #1e2438;
-            border-left: 4px solid #8b9eff;
+            background: var(--card-bg);
+            border-left: 4px solid var(--accent-color);
             padding: 15px;
             margin-bottom: 15px;
             border-radius: 8px;
@@ -108,7 +191,7 @@
         }
 
         .conversation-item:hover {
-            background: #2a3050;
+            background: var(--panel-bg);
             transform: translateX(5px);
         }
 
@@ -122,13 +205,13 @@
         .thread-id {
             font-family: 'Courier New', monospace;
             font-size: 0.85em;
-            color: #8b9eff;
+            color: var(--accent-color);
             font-weight: bold;
         }
 
         .message-count {
-            background: #8b9eff;
-            color: #1a1a2e;
+            background: var(--accent-color);
+            color: white;
             padding: 4px 10px;
             border-radius: 12px;
             font-size: 0.8em;
@@ -136,24 +219,25 @@
         }
 
         .conversation-time {
-            color: #a0a0a0;
+            color: var(--muted-text);
             font-size: 0.85em;
         }
 
         .message-item {
-            background: #1a1f35;
+            background: var(--card-bg);
             padding: 10px;
             margin: 8px 0;
             border-radius: 6px;
-            border-left: 3px solid #3a4266;
+            border-left: 3px solid var(--border-color);
         }
 
         .message-item.user {
-            border-left-color: #a78bfa;
+            border-left-color: var(--message-user-border);
         }
 
         .message-item.assistant {
-            border-left-color: #8b9eff;
+            border-left-color: var(--message-assistant-border);
+            background: var(--message-assistant-bg);
         }
 
         .message-role {
@@ -164,22 +248,22 @@
         }
 
         .message-item.user .message-role {
-            color: #a78bfa;
+            color: var(--message-user-border);
         }
 
         .message-item.assistant .message-role {
-            color: #8b9eff;
+            color: var(--message-assistant-border);
         }
 
         .message-content {
-            color: #d0d0d0;
+            color: var(--text-color);
             font-size: 0.9em;
             line-height: 1.5;
         }
 
         .error-item {
-            background: #3d2020;
-            border-left: 4px solid #ff6b6b;
+            background: var(--error-bg);
+            border-left: 4px solid var(--error-border);
             padding: 15px;
             margin-bottom: 15px;
             border-radius: 8px;
@@ -223,7 +307,7 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
-            border-bottom: 2px solid #3a4266;
+            border-bottom: 2px solid var(--border-color);
             padding-bottom: 10px;
         }
 
@@ -256,13 +340,13 @@
         }
 
         .error-time {
-            color: #a0a0a0;
+            color: var(--muted-text);
             font-size: 0.85em;
             margin-bottom: 5px;
         }
 
         .error-message {
-            color: #ffb3b3;
+            color: var(--error-border);
             font-weight: 500;
             margin-bottom: 8px;
         }
@@ -270,10 +354,10 @@
         .error-stack {
             font-family: 'Courier New', monospace;
             font-size: 0.75em;
-            color: #c0c0c0;
+            color: var(--text-color);
             max-height: 100px;
             overflow-y: auto;
-            background: #2a1616;
+            background: var(--card-bg);
             padding: 8px;
             border-radius: 4px;
         }
@@ -301,27 +385,27 @@
         .feedback-count {
             font-size: 2em;
             font-weight: bold;
-            color: #8b9eff;
+            color: var(--accent-color);
         }
 
         .feedback-label {
             font-size: 0.9em;
-            color: #a0a0a0;
+            color: var(--muted-text);
             text-transform: uppercase;
             letter-spacing: 1px;
         }
 
         .feedback-stat.positive .feedback-count {
-            color: #4ade80;
+            color: var(--positive-color);
         }
 
         .feedback-stat.negative .feedback-count {
-            color: #f87171;
+            color: var(--negative-color);
         }
 
         .spam-item {
-            background: #3d2020;
-            border-left: 4px solid #ff6b6b;
+            background: var(--spam-bg);
+            border-left: 4px solid var(--error-border);
             padding: 18px;
             margin-bottom: 18px;
             border-radius: 8px;
@@ -330,7 +414,7 @@
         }
 
         .spam-item:hover {
-            background: #4d2828;
+            background: var(--error-bg);
             transform: translateX(3px);
         }
 
@@ -347,12 +431,12 @@
 
         .spam-username {
             font-weight: bold;
-            color: #ffb3b3;
+            color: var(--error-border);
             font-size: 1.05em;
         }
 
         .spam-reason {
-            background: #ff6b6b;
+            background: var(--error-border);
             color: white;
             padding: 4px 10px;
             border-radius: 4px;
@@ -362,21 +446,21 @@
         }
 
         .spam-time {
-            color: #a0a0a0;
+            color: var(--muted-text);
             font-size: 0.85em;
             margin-bottom: 8px;
         }
 
         .spam-message {
             font-size: 0.9em;
-            color: #c0c0c0;
+            color: var(--text-color);
             font-style: italic;
             margin-top: 8px;
         }
 
         .blacklist-item {
-            background: #3d2020;
-            border-left: 4px solid #ef4444;
+            background: var(--blacklist-bg);
+            border-left: 4px solid var(--button-danger-bg);
             padding: 15px;
             margin-bottom: 10px;
             border-radius: 8px;
@@ -391,12 +475,12 @@
 
         .blacklist-username {
             font-weight: bold;
-            color: #f87171;
+            color: var(--error-border);
             font-size: 1.1em;
         }
 
         .blacklist-badge {
-            background: #ef4444;
+            background: var(--button-danger-bg);
             color: white;
             padding: 3px 10px;
             border-radius: 4px;
@@ -408,17 +492,17 @@
         .blacklist-info {
             margin-top: 8px;
             font-size: 0.9em;
-            color: #a0a0a0;
+            color: var(--muted-text);
         }
 
         .blacklist-reason {
             margin-top: 5px;
             font-style: italic;
-            color: #ffb3b3;
+            color: var(--error-border);
         }
 
         .blacklist-form {
-            background: #1e2438;
+            background: var(--card-bg);
             padding: 20px;
             border-radius: 8px;
             margin-bottom: 20px;
@@ -430,7 +514,7 @@
 
         .form-group label {
             display: block;
-            color: #a0a0a0;
+            color: var(--muted-text);
             font-size: 0.9em;
             margin-bottom: 5px;
             font-weight: 600;
@@ -438,9 +522,9 @@
 
         .form-group input {
             width: 100%;
-            background: #252b48;
-            border: 1px solid #3a4266;
-            color: #e0e0e0;
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
             padding: 10px;
             border-radius: 6px;
             font-size: 0.95em;
@@ -448,12 +532,12 @@
 
         .form-group input:focus {
             outline: none;
-            border-color: #8b9eff;
+            border-color: var(--accent-color);
         }
 
         .btn-primary {
-            background: #8b9eff;
-            color: #1a1a2e;
+            background: var(--button-primary-bg);
+            color: var(--button-primary-text);
             border: none;
             padding: 10px 20px;
             border-radius: 6px;
@@ -464,12 +548,12 @@
         }
 
         .btn-primary:hover {
-            background: #a78bfa;
+            background: var(--accent-hover);
             transform: translateY(-2px);
         }
 
         .btn-danger {
-            background: #ef4444;
+            background: var(--button-danger-bg);
             color: white;
             border: none;
             padding: 6px 12px;
@@ -490,13 +574,13 @@
             width: 12px;
             height: 12px;
             border-radius: 50%;
-            background: #28a745;
+            background: var(--status-online);
             margin-right: 8px;
             animation: pulse 2s infinite;
         }
 
         .status-indicator.disconnected {
-            background: #dc3545;
+            background: var(--status-offline);
             animation: none;
         }
 
@@ -511,14 +595,14 @@
 
         .connection-status {
             text-align: center;
-            color: white;
+            color: var(--text-color);
             margin-bottom: 20px;
             font-size: 0.9em;
         }
 
         .empty-state {
             text-align: center;
-            color: #6b7280;
+            color: var(--muted-text);
             padding: 40px;
             font-style: italic;
         }
@@ -527,22 +611,22 @@
             position: fixed;
             bottom: 30px;
             right: 30px;
-            background: #8b9eff;
-            color: #1a1a2e;
+            background: var(--accent-color);
+            color: white;
             border: none;
             padding: 15px 25px;
             border-radius: 50px;
             cursor: pointer;
             font-size: 1em;
             font-weight: 600;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            box-shadow: 0 4px 12px rgba(50, 205, 50, 0.4);
             transition: all 0.2s;
         }
 
         .auto-scroll-toggle:hover {
-            background: #a78bfa;
+            background: var(--accent-hover);
             transform: scale(1.05);
-            box-shadow: 0 6px 16px rgba(0,0,0,0.5);
+            box-shadow: 0 6px 16px rgba(50, 205, 50, 0.5);
         }
 
         .auto-scroll-toggle.disabled {
@@ -558,6 +642,8 @@
     </style>
 </head>
 <body>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌓</button>
+
     <div class="container">
         <h1>🥗 Salad Support AI - Live Dashboard</h1>
 
@@ -711,6 +797,10 @@
                     break;
                 case 'messageProcessed':
                 case 'conversationCreated':
+                    fetchConversations();
+                    fetchStats();
+                    break;
+                case 'conversationEnded':
                     fetchConversations();
                     fetchStats();
                     break;
@@ -1065,6 +1155,21 @@
             autoScrollToggle.classList.toggle('disabled', !autoScroll);
         });
 
+        // Theme toggle functionality
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('dashboard-theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('dashboard-theme', newTheme);
+        }
+
+        // Initialize theme on load
+        loadTheme();
         connect();
     </script>
 </body>

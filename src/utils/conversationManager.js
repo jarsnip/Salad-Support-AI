@@ -146,78 +146,148 @@ class ConversationManager {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Support Conversation Transcript</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-color: #f5f5f5;
+            --text-color: #333;
+            --message-bg: white;
+            --message-bg-assistant: #f8f9ff;
+            --border-color: #ddd;
+            --header-gradient-start: #667eea;
+            --header-gradient-end: #764ba2;
+            --accent-color: #32cd32;
+            --accent-hover: #28a428;
+            --footer-text: #999;
+        }
+
+        [data-theme="dark"] {
+            --bg-color: #1a1a2e;
+            --text-color: #e0e0e0;
+            --message-bg: #2d2d44;
+            --message-bg-assistant: #252538;
+            --border-color: #3a3a52;
+            --header-gradient-start: #1a1a2e;
+            --header-gradient-end: #16213e;
+            --accent-color: #32cd32;
+            --accent-hover: #28a428;
+            --footer-text: #888;
+        }
+
+        * {
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
-            background: #f5f5f5;
-            color: #333;
+            background: var(--bg-color);
+            color: var(--text-color);
         }
+
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 1.5em;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(50, 205, 50, 0.3);
+            z-index: 1000;
+        }
+
+        .theme-toggle:hover {
+            background: var(--accent-hover);
+            transform: scale(1.1);
+        }
+
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--header-gradient-start) 0%, var(--header-gradient-end) 100%);
             color: white;
             padding: 20px;
             border-radius: 8px;
             margin-bottom: 20px;
+            position: relative;
         }
+
         .header h1 {
             margin: 0 0 10px 0;
             font-size: 1.5em;
         }
+
         .header .info {
             font-size: 0.9em;
             opacity: 0.9;
         }
+
         .message {
-            background: white;
+            background: var(--message-bg);
             padding: 15px;
             margin-bottom: 10px;
             border-radius: 8px;
-            border-left: 4px solid #ddd;
+            border-left: 4px solid var(--border-color);
         }
+
         .message.user {
-            border-left-color: #764ba2;
+            border-left-color: var(--accent-color);
         }
+
         .message.assistant {
             border-left-color: #667eea;
-            background: #f8f9ff;
+            background: var(--message-bg-assistant);
         }
+
         .message-header {
             display: flex;
             justify-content: space-between;
             margin-bottom: 8px;
             font-size: 0.85em;
         }
+
         .role {
             font-weight: bold;
             text-transform: uppercase;
         }
+
         .role.user {
-            color: #764ba2;
+            color: var(--accent-color);
         }
+
         .role.assistant {
             color: #667eea;
         }
+
         .timestamp {
-            color: #999;
+            color: var(--footer-text);
         }
+
         .content {
             line-height: 1.6;
             white-space: pre-wrap;
         }
+
         .footer {
             text-align: center;
-            color: #999;
+            color: var(--footer-text);
             font-size: 0.85em;
             margin-top: 30px;
             padding-top: 20px;
-            border-top: 1px solid #ddd;
+            border-top: 1px solid var(--border-color);
         }
     </style>
 </head>
 <body>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌓</button>
+
     <div class="header">
         <h1>🥗 Salad Support AI - Conversation Transcript</h1>
         <div class="info">
@@ -252,6 +322,25 @@ class ConversationManager {
     <div class="footer">
         This conversation has been archived. If you need further assistance, please create a new support thread.
     </div>
+
+    <script>
+        // Load theme preference
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('transcript-theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        }
+
+        // Toggle theme
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('transcript-theme', newTheme);
+        }
+
+        // Initialize theme on load
+        loadTheme();
+    </script>
 </body>
 </html>
 `;

@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import docsManager from '../utils/docsManager.js';
+import configPersistence from '../utils/configPersistence.js';
 
 class AIService {
   constructor(apiKey, model = 'claude-haiku-4-5-20251001') {
@@ -7,10 +8,22 @@ class AIService {
       apiKey: apiKey
     });
     this.model = model;
-    this.systemPrompt = this.buildSystemPrompt();
+    this.systemPrompt = this.loadSystemPrompt();
   }
 
-  buildSystemPrompt() {
+  loadSystemPrompt() {
+    // Try to load custom prompt from persistent config
+    const customPrompt = configPersistence.getSystemPrompt();
+    if (customPrompt) {
+      console.log('✅ Using custom system prompt from config.json');
+      return customPrompt;
+    }
+    // Fall back to default
+    console.log('✅ Using default system prompt');
+    return this.buildDefaultSystemPrompt();
+  }
+
+  buildDefaultSystemPrompt() {
     return `You are Salad Support Guru, helping Salad users ("Chefs") with questions about the distributed cloud computing platform.
 
 RULES:

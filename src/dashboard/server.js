@@ -9,6 +9,7 @@ import path from 'path';
 import archiver from 'archiver';
 import docsManager from '../utils/docsManager.js';
 import ConfigManager from '../utils/configManager.js';
+import configPersistence from '../utils/configPersistence.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -754,20 +755,56 @@ export class DashboardServer {
           return res.status(400).send('systemPrompt is required and must be a string');
         }
 
+        if (systemPrompt.trim().length === 0) {
+          return res.status(400).send('systemPrompt cannot be empty');
+        }
+
         // Update the system prompt in the AI service
         if (!this.bot.aiService) {
           return res.status(500).send('AI service not initialized');
         }
 
+        // Save to persistent config
+        const saved = configPersistence.setSystemPrompt(systemPrompt);
+
+        if (!saved) {
+          return res.status(500).send('Failed to save system prompt to config file');
+        }
+
+        // Update in-memory prompt immediately
         this.bot.aiService.systemPrompt = systemPrompt;
 
         res.json({
           success: true,
-          message: 'System prompt updated successfully',
-          warning: 'This change is temporary. To persist, modify the buildSystemPrompt() method in aiService.js'
+          message: 'System prompt updated and saved to config.json'
         });
       } catch (error) {
         console.error('Error updating system prompt:', error);
+        res.status(500).send('Internal server error');
+      }
+    });
+
+    // API endpoint to reset system prompt to default
+    this.app.post('/api/config/system-prompt/reset', (req, res) => {
+      try {
+        if (!this.bot.aiService) {
+          return res.status(500).send('AI service not initialized');
+        }
+
+        // Reset to default in config
+        configPersistence.resetSystemPrompt();
+
+        // Reload default prompt
+        const defaultPrompt = this.bot.aiService.buildDefaultSystemPrompt();
+        this.bot.aiService.systemPrompt = defaultPrompt;
+
+        res.json({
+          success: true,
+          message: 'System prompt reset to default',
+          systemPrompt: defaultPrompt
+        });
+      } catch (error) {
+        console.error('Error resetting system prompt:', error);
         res.status(500).send('Internal server error');
       }
     });

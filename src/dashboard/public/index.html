@@ -464,6 +464,16 @@
             transform: translateY(-2px);
         }
 
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+            transform: translateY(-2px);
+        }
+
         .conversation-header {
             display: flex;
             justify-content: space-between;
@@ -1708,6 +1718,7 @@
                         <h2>📜 Saved Transcripts</h2>
                         <div class="btn-group">
                             <button class="btn btn-primary" onclick="loadTranscripts()">🔄 Refresh</button>
+                            <button class="btn btn-success" onclick="downloadAllTranscripts()">📦 Download All</button>
                             <button class="btn btn-danger" onclick="deleteAllTranscripts()">🗑️ Delete All</button>
                         </div>
                     </div>
@@ -2451,6 +2462,26 @@
             } catch (error) {
                 console.error('Error downloading transcript:', error);
                 alert('Failed to download transcript');
+            }
+        }
+
+        async function downloadAllTranscripts() {
+            try {
+                // Check if there are any transcripts
+                const response = await fetch('/api/transcripts?limit=1');
+                const data = await response.json();
+                const transcripts = data.transcripts || [];
+
+                if (transcripts.length === 0) {
+                    alert('No transcripts available to download');
+                    return;
+                }
+
+                // Open download endpoint in new window
+                window.open('/api/transcripts/download-all', '_blank');
+            } catch (error) {
+                console.error('Error downloading all transcripts:', error);
+                alert('Failed to download transcripts');
             }
         }
 

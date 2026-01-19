@@ -12,10 +12,17 @@ class ConversationManager {
         createdAt: Date.now(),
         lastActivity: Date.now(),
         originalPosterId: null,
-        originalPosterUsername: null
+        originalPosterUsername: null,
+        ended: false
       });
     }
     return this.conversations.get(threadId);
+  }
+
+  endConversation(threadId) {
+    const conversation = this.getConversation(threadId);
+    conversation.ended = true;
+    conversation.lastActivity = Date.now();
   }
 
   setOriginalPoster(threadId, userId, username) {

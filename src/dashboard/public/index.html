@@ -272,38 +272,45 @@
             border-radius: 4px;
         }
 
-        .feedback-item {
-            background: #1e2438;
-            border-left: 4px solid #4ade80;
-            padding: 20px;
-            margin-bottom: 20px;
-            border-radius: 8px;
-            transition: all 0.2s;
-        }
-
-        .feedback-item:hover {
-            background: #2a3050;
-            transform: translateX(3px);
-        }
-
-        .feedback-item.negative {
-            border-left-color: #f87171;
-        }
-
-        .feedback-header {
+        .feedback-summary {
             display: flex;
-            justify-content: space-between;
+            justify-content: space-around;
             align-items: center;
-            margin-bottom: 10px;
+            padding: 30px;
+            gap: 40px;
         }
 
-        .feedback-type {
-            font-size: 1.8em;
+        .feedback-stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
         }
 
-        .feedback-time {
+        .feedback-emoji {
+            font-size: 3em;
+            line-height: 1;
+        }
+
+        .feedback-count {
+            font-size: 2em;
+            font-weight: bold;
+            color: #8b9eff;
+        }
+
+        .feedback-label {
+            font-size: 0.9em;
             color: #a0a0a0;
-            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .feedback-stat.positive .feedback-count {
+            color: #4ade80;
+        }
+
+        .feedback-stat.negative .feedback-count {
+            color: #f87171;
         }
 
         .spam-item {
@@ -536,7 +543,7 @@
         </div>
 
         <div class="panel">
-            <h2>👍 Feedback</h2>
+            <h2>👍 Feedback Summary</h2>
             <div id="feedback">
                 <div class="empty-state">No feedback yet</div>
             </div>
@@ -649,12 +656,15 @@
         }
 
         function updateConversations(conversations) {
-            if (!conversations || conversations.length === 0) {
+            // Filter out ended conversations
+            const activeConversations = conversations ? conversations.filter(conv => !conv.ended) : [];
+
+            if (!activeConversations || activeConversations.length === 0) {
                 conversationsDiv.innerHTML = '<div class="empty-state">No active conversations</div>';
                 return;
             }
 
-            conversationsDiv.innerHTML = conversations.map(conv => `
+            conversationsDiv.innerHTML = activeConversations.map(conv => `
                 <div class="conversation-item" onclick="toggleMessages('${conv.threadId}')">
                     <div class="conversation-header">
                         <span class="thread-id">Thread: ${conv.threadId}</span>
@@ -706,15 +716,24 @@
                 return;
             }
 
-            feedbackDiv.innerHTML = feedback.slice(-20).reverse().map(fb => `
-                <div class="feedback-item ${fb.type === 'negative' ? 'negative' : ''}">
-                    <div class="feedback-header">
-                        <span class="feedback-type">${fb.type === 'positive' ? '👍' : '👎'}</span>
-                        <span class="feedback-time">${formatTime(fb.timestamp)}</span>
+            // Calculate aggregated counts
+            const positiveCount = feedback.filter(fb => fb.type === 'positive').length;
+            const negativeCount = feedback.filter(fb => fb.type === 'negative').length;
+
+            feedbackDiv.innerHTML = `
+                <div class="feedback-summary">
+                    <div class="feedback-stat positive">
+                        <div class="feedback-emoji">👍</div>
+                        <div class="feedback-count">${positiveCount}</div>
+                        <div class="feedback-label">Positive</div>
                     </div>
-                    <div class="thread-id">Thread: ${fb.threadId}</div>
+                    <div class="feedback-stat negative">
+                        <div class="feedback-emoji">👎</div>
+                        <div class="feedback-count">${negativeCount}</div>
+                        <div class="feedback-label">Negative</div>
+                    </div>
                 </div>
-            `).join('');
+            `;
         }
 
         function updateSpam(spam) {

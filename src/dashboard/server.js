@@ -163,6 +163,7 @@ export class DashboardServer {
         lastActivity: conversation.lastActivity,
         originalPoster: conversation.originalPosterUsername || 'Unknown',
         originalPosterId: conversation.originalPosterId,
+        ended: conversation.ended || false,
         messages: conversation.messages.slice(-10) // Last 10 messages
       });
     }

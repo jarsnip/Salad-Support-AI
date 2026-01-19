@@ -372,6 +372,9 @@ class SupportBot extends EventEmitter {
 
         await channel.send(`Thank you for your feedback! ${feedbackType === 'positive' ? 'Glad we could help!' : 'A human agent will follow up with you shortly.'}`);
 
+        // Mark conversation as ended
+        this.conversationManager.endConversation(channel.id);
+
         await channel.setLocked(true);
         await channel.setArchived(true);
 

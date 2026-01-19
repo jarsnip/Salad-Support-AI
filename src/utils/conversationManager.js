@@ -19,7 +19,8 @@ class ConversationManager {
         originalPosterUsername: null,
         ended: false,
         deleteScheduled: null,
-        feedback: null // Store conversation feedback
+        feedback: null, // Store conversation feedback
+        initialMessage: null // Store first user message for feedback analysis
       });
     }
     return this.conversations.get(threadId);
@@ -76,6 +77,11 @@ class ConversationManager {
     });
 
     conversation.lastActivity = Date.now();
+
+    // Capture the first user message for feedback analysis
+    if (role === 'user' && !conversation.initialMessage) {
+      conversation.initialMessage = content;
+    }
 
     // Track when bot sends a message (for auto-end feature)
     if (role === 'assistant') {

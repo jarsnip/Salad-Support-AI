@@ -15,25 +15,25 @@
             --panel-bg: white;
             --panel-border: #dee2e6;
             --card-bg: #f8f9fa;
-            --stat-value-color: #32cd32;
-            --accent-color: #32cd32;
-            --accent-hover: #28a428;
-            --heading-color: #32cd32;
+            --stat-value-color: #90FF75;
+            --accent-color: #90FF75;
+            --accent-hover: #7ce65e;
+            --heading-color: #90FF75;
             --border-color: #dee2e6;
-            --message-user-border: #32cd32;
+            --message-user-border: #90FF75;
             --message-assistant-border: #667eea;
             --message-assistant-bg: #f0f4ff;
             --error-bg: #ffe6e6;
             --error-border: #ff6b6b;
             --spam-bg: #ffe6e6;
             --blacklist-bg: #ffe6e6;
-            --button-primary-bg: #32cd32;
-            --button-primary-text: white;
+            --button-primary-bg: #90FF75;
+            --button-primary-text: #1a1a2e;
             --button-danger-bg: #ef4444;
             --muted-text: #6c757d;
             --status-online: #28a745;
             --status-offline: #dc3545;
-            --positive-color: #32cd32;
+            --positive-color: #90FF75;
             --negative-color: #f87171;
         }
 
@@ -44,25 +44,25 @@
             --panel-bg: #252b48;
             --panel-border: #3a4266;
             --card-bg: #1e2438;
-            --stat-value-color: #32cd32;
-            --accent-color: #32cd32;
-            --accent-hover: #28a428;
-            --heading-color: #32cd32;
+            --stat-value-color: #90FF75;
+            --accent-color: #90FF75;
+            --accent-hover: #7ce65e;
+            --heading-color: #90FF75;
             --border-color: #3a4266;
-            --message-user-border: #32cd32;
+            --message-user-border: #90FF75;
             --message-assistant-border: #667eea;
             --message-assistant-bg: #252538;
             --error-bg: #3d2020;
             --error-border: #ff6b6b;
             --spam-bg: #3d2020;
             --blacklist-bg: #3d2020;
-            --button-primary-bg: #32cd32;
-            --button-primary-text: white;
+            --button-primary-bg: #90FF75;
+            --button-primary-text: #1a1a2e;
             --button-danger-bg: #ef4444;
             --muted-text: #a0a0a0;
             --status-online: #28a745;
             --status-offline: #dc3545;
-            --positive-color: #4ade80;
+            --positive-color: #90FF75;
             --negative-color: #f87171;
         }
 
@@ -106,7 +106,7 @@
             height: 50px;
             font-size: 1.5em;
             cursor: pointer;
-            box-shadow: 0 4px 12px rgba(50, 205, 50, 0.3);
+            box-shadow: 0 4px 12px rgba(144, 255, 117, 0.3);
             z-index: 1000;
         }
 
@@ -619,14 +619,14 @@
             cursor: pointer;
             font-size: 1em;
             font-weight: 600;
-            box-shadow: 0 4px 12px rgba(50, 205, 50, 0.4);
+            box-shadow: 0 4px 12px rgba(144, 255, 117, 0.4);
             transition: all 0.2s;
         }
 
         .auto-scroll-toggle:hover {
             background: var(--accent-hover);
             transform: scale(1.05);
-            box-shadow: 0 6px 16px rgba(50, 205, 50, 0.5);
+            box-shadow: 0 6px 16px rgba(144, 255, 117, 0.5);
         }
 
         .auto-scroll-toggle.disabled {
@@ -653,9 +653,78 @@
             transform: translateY(-2px);
         }
 
+        .feedback-graph {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            height: 200px;
+            padding: 20px 10px;
+            gap: 8px;
+        }
+
+        .graph-bar {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            min-width: 40px;
+        }
+
+        .bar-container {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            height: 150px;
+            position: relative;
+        }
+
+        .bar {
+            width: 80%;
+            background: linear-gradient(180deg, var(--accent-color) 0%, var(--accent-hover) 100%);
+            border-radius: 4px 4px 0 0;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .bar.negative {
+            background: linear-gradient(180deg, var(--negative-color) 0%, #dc2626 100%);
+        }
+
+        .bar:hover {
+            opacity: 0.8;
+            transform: scaleY(1.05);
+        }
+
+        .bar-value {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.85em;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+
+        .bar-label {
+            font-size: 0.75em;
+            color: var(--muted-text);
+            text-align: center;
+        }
+
         @media (max-width: 768px) {
             .content-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .feedback-graph {
+                gap: 4px;
+            }
+
+            .graph-bar {
+                min-width: 30px;
             }
         }
     </style>
@@ -721,6 +790,13 @@
             <h2>👍 Feedback Summary</h2>
             <div id="feedback">
                 <div class="empty-state">No feedback yet</div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>📊 Feedback Over Time (Last 10 Days)</h2>
+            <div id="feedbackGraph">
+                <div class="empty-state">Loading feedback data...</div>
             </div>
         </div>
 
@@ -1021,6 +1097,39 @@
                     </div>
                 </div>
             `).join('');
+        }
+
+        function updateFeedbackGraph(dailyData) {
+            const feedbackGraphDiv = document.getElementById('feedbackGraph');
+
+            if (!dailyData || dailyData.length === 0) {
+                feedbackGraphDiv.innerHTML = '<div class="empty-state">No feedback data available</div>';
+                return;
+            }
+
+            // Find max absolute value for scaling
+            const maxValue = Math.max(...dailyData.map(d => Math.abs(d.overall)), 1);
+
+            feedbackGraphDiv.innerHTML = `
+                <div class="feedback-graph">
+                    ${dailyData.map(day => {
+                        const barHeight = (Math.abs(day.overall) / maxValue) * 100;
+                        const isNegative = day.overall < 0;
+                        return `
+                            <div class="graph-bar">
+                                <div class="bar-container">
+                                    <div class="bar ${isNegative ? 'negative' : ''}"
+                                         style="height: ${barHeight}%"
+                                         title="${day.date}: ${day.overall >= 0 ? '+' : ''}${day.overall} (👍${day.positive} 👎${day.negative})">
+                                        <span class="bar-value">${day.overall >= 0 ? '+' : ''}${day.overall}</span>
+                                    </div>
+                                </div>
+                                <div class="bar-label">${day.date}</div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            `;
         }
 
         function toggleMessages(threadId) {

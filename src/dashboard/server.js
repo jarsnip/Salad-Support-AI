@@ -3,6 +3,7 @@ import { WebSocketServer } from 'ws';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import http from 'http';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -18,7 +19,9 @@ export class DashboardServer {
     this.errors = [];
     this.maxErrors = 100;
     this.feedbackData = [];
+    this.feedbackFile = join(process.cwd(), 'data', 'feedback.json');
 
+    this.loadFeedback();
     this.setupRoutes();
     this.setupWebSocket();
     this.setupBotEventListeners();
@@ -60,6 +63,11 @@ export class DashboardServer {
     // API endpoint to get feedback data
     this.app.get('/api/feedback', (req, res) => {
       res.json(this.feedbackData);
+    });
+
+    // API endpoint to get daily feedback aggregation
+    this.app.get('/api/feedback/daily', (req, res) => {
+      res.json(this.getDailyFeedback());
     });
 
     // API endpoint to get spam events
@@ -186,9 +194,7 @@ export class DashboardServer {
     // Listen for feedback
     this.bot.on('feedbackReceived', (feedback) => {
       this.feedbackData.push(feedback);
-      if (this.feedbackData.length > this.maxErrors) {
-        this.feedbackData.shift();
-      }
+      this.saveFeedback();
       this.broadcast({
         type: 'feedbackReceived',
         data: feedback
@@ -238,6 +244,61 @@ export class DashboardServer {
     if (this.errors.length > this.maxErrors) {
       this.errors.shift();
     }
+  }
+
+  loadFeedback() {
+    try {
+      const dataDir = dirname(this.feedbackFile);
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+      }
+
+      if (fs.existsSync(this.feedbackFile)) {
+        const data = fs.readFileSync(this.feedbackFile, 'utf8');
+        this.feedbackData = JSON.parse(data);
+        console.log(`Loaded ${this.feedbackData.length} feedback entries from file`);
+      }
+    } catch (error) {
+      console.error('Error loading feedback:', error);
+    }
+  }
+
+  saveFeedback() {
+    try {
+      fs.writeFileSync(this.feedbackFile, JSON.stringify(this.feedbackData, null, 2));
+    } catch (error) {
+      console.error('Error saving feedback:', error);
+    }
+  }
+
+  getDailyFeedback() {
+    // Aggregate feedback by day for the last 10 days
+    const now = Date.now();
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    const dailyData = [];
+
+    for (let i = 9; i >= 0; i--) {
+      const dayStart = now - (i + 1) * oneDayMs;
+      const dayEnd = now - i * oneDayMs;
+
+      const dayFeedback = this.feedbackData.filter(fb =>
+        fb.timestamp >= dayStart && fb.timestamp < dayEnd
+      );
+
+      const positive = dayFeedback.filter(fb => fb.type === 'positive').length;
+      const negative = dayFeedback.filter(fb => fb.type === 'negative').length;
+      const overall = positive - negative;
+
+      const date = new Date(dayStart);
+      dailyData.push({
+        date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        positive,
+        negative,
+        overall
+      });
+    }
+
+    return dailyData;
   }
 
   broadcast(message) {

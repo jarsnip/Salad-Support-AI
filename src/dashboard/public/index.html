@@ -2429,6 +2429,13 @@
                 return;
             }
 
+            // Check if there's any actual feedback (non-zero values)
+            const hasAnyFeedback = dailyData.some(d => d.positive > 0 || d.negative > 0);
+            if (!hasAnyFeedback) {
+                feedbackGraphDiv.innerHTML = '<div class="empty-state">No feedback received yet</div>';
+                return;
+            }
+
             const width = 100;
             const height = 40;
             const padding = { top: 8, right: 5, bottom: 5, left: 5 };

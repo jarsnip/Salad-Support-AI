@@ -1291,6 +1291,302 @@
                 font-size: 1.5em;
             }
         }
+
+        /* Documentation View Styles */
+        .docs-layout {
+            display: flex;
+            gap: 20px;
+            height: calc(100vh - 100px);
+        }
+
+        .docs-sidebar {
+            width: 300px;
+            min-width: 300px;
+            overflow-y: auto;
+        }
+
+        .docs-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+        }
+
+        .docs-browser {
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+        }
+
+        .docs-tree-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            border-radius: 6px;
+            margin: 2px 0;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .docs-tree-item:hover {
+            background: var(--hover-bg);
+        }
+
+        .docs-tree-item.selected {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .docs-tree-folder {
+            font-weight: 600;
+            color: var(--accent-color);
+        }
+
+        .docs-tree-children {
+            margin-left: 20px;
+        }
+
+        .docs-tree-toggle {
+            cursor: pointer;
+            user-select: none;
+            width: 16px;
+            text-align: center;
+        }
+
+        .docs-editor-container {
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .docs-placeholder {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--secondary-text);
+        }
+
+        .docs-editor {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .editor-info {
+            padding: 12px;
+            background: var(--code-bg);
+            border-radius: 6px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85em;
+            color: var(--secondary-text);
+        }
+
+        .doc-textarea {
+            flex: 1;
+            width: 100%;
+            min-height: 400px;
+            padding: 16px;
+            background: var(--input-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            color: var(--text-color);
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            resize: vertical;
+        }
+
+        .doc-textarea:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.9em;
+        }
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
+        .btn-primary {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+        }
+
+        @media (max-width: 968px) {
+            .docs-layout {
+                flex-direction: column;
+            }
+
+            .docs-sidebar {
+                width: 100%;
+                min-width: 100%;
+            }
+        }
+
+        /* Configuration View Styles */
+        .config-warning {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 0.95em;
+        }
+
+        [data-theme="dark"] .config-warning {
+            background: rgba(255, 193, 7, 0.15);
+            border-color: rgba(255, 193, 7, 0.3);
+            color: #ffc107;
+        }
+
+        .config-textarea {
+            width: 100%;
+            min-height: 300px;
+            padding: 16px;
+            background: var(--input-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            color: var(--text-color);
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            resize: vertical;
+        }
+
+        .config-textarea:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        .config-note {
+            margin-top: 12px;
+            padding: 10px;
+            background: var(--code-bg);
+            border-radius: 6px;
+            font-size: 0.85em;
+            color: var(--secondary-text);
+        }
+
+        .config-category {
+            margin-bottom: 20px;
+        }
+
+        .config-category-title {
+            font-size: 1.1em;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--accent-color);
+        }
+
+        .config-field {
+            margin-bottom: 16px;
+        }
+
+        .config-field-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: var(--text-color);
+        }
+
+        .config-field-description {
+            display: block;
+            font-size: 0.85em;
+            color: var(--secondary-text);
+            margin-bottom: 6px;
+        }
+
+        .config-field-input {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--input-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 6px;
+            color: var(--text-color);
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+
+        .config-field-input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        .config-field-input.masked {
+            color: var(--secondary-text);
+        }
+
+        .config-field-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 4px;
+            font-size: 0.8em;
+            color: var(--secondary-text);
+        }
+
+        .config-field-required {
+            color: #dc3545;
+        }
+
+        .config-field-options {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .config-field-option {
+            padding: 6px 12px;
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .config-field-option:hover {
+            background: var(--hover-bg);
+        }
+
+        .config-field-option.selected {
+            background: var(--accent-color);
+            color: white;
+            border-color: var(--accent-color);
+        }
+
+        .config-field-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-large {
+            padding: 12px 24px;
+            font-size: 1.1em;
+            width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -1491,27 +1787,130 @@
             </div>
         </div>
 
-        <!-- Documentation View (Placeholder) -->
+        <!-- Documentation View -->
         <div class="view-container" id="view-documentation">
             <div class="container">
-                <div class="panel">
-                    <div class="placeholder-view">
-                        <div class="placeholder-icon">📚</div>
-                        <h2 class="placeholder-title">Documentation Management</h2>
-                        <p class="placeholder-text">Documentation editor and management features coming soon.<br>This section will allow you to manage AI knowledge base documents.</p>
+                <div class="docs-layout">
+                    <!-- File Browser Panel -->
+                    <div class="docs-sidebar">
+                        <div class="panel">
+                            <div class="panel-header">
+                                <h3>📁 Documentation Files</h3>
+                                <button class="btn btn-sm btn-primary" onclick="uploadDocFile()">
+                                    <span>📤 Upload</span>
+                                </button>
+                            </div>
+                            <div class="panel-body">
+                                <div id="docsBrowser" class="docs-browser">
+                                    <div class="empty-state">Loading files...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- File Editor Panel -->
+                    <div class="docs-main">
+                        <div class="panel">
+                            <div class="panel-header">
+                                <h3 id="currentDocTitle">📄 No file selected</h3>
+                                <div class="btn-group">
+                                    <button class="btn btn-sm" id="saveDocBtn" onclick="saveCurrentDoc()" disabled>
+                                        <span>💾 Save</span>
+                                    </button>
+                                    <button class="btn btn-sm btn-danger" id="deleteDocBtn" onclick="deleteCurrentDoc()" disabled>
+                                        <span>🗑️ Delete</span>
+                                    </button>
+                                    <button class="btn btn-sm" onclick="reloadDocs()">
+                                        <span>🔄 Reload All</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="panel-body docs-editor-container">
+                                <div class="docs-placeholder">
+                                    <div class="placeholder-icon">📄</div>
+                                    <p>Select a file from the browser to edit</p>
+                                </div>
+                                <div class="docs-editor" id="docsEditor" style="display: none;">
+                                    <div class="editor-info">
+                                        <span id="editorPath"></span>
+                                        <span id="editorMeta"></span>
+                                    </div>
+                                    <textarea id="docContent" class="doc-textarea"></textarea>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Stats Panel -->
+                        <div class="panel">
+                            <div class="panel-header">
+                                <h3>📊 Documentation Stats</h3>
+                            </div>
+                            <div class="panel-body">
+                                <div id="docsStats" class="stats-grid">
+                                    <div class="stat-card">
+                                        <div class="stat-label">Total Documents</div>
+                                        <div class="stat-value" id="statTotalDocs">-</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <div class="stat-label">Categories</div>
+                                        <div class="stat-value" id="statCategories">-</div>
+                                    </div>
+                                    <div class="stat-card">
+                                        <div class="stat-label">Tags</div>
+                                        <div class="stat-value" id="statTags">-</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Configuration View (Placeholder) -->
+        <!-- Configuration View -->
         <div class="view-container" id="view-configuration">
             <div class="container">
+                <div class="page-header">
+                    <h1 class="page-title">Configuration Editor</h1>
+                    <p class="page-subtitle">Edit system settings and AI configuration</p>
+                </div>
+
+                <div class="config-warning">
+                    ⚠️ Configuration changes require a bot restart to take effect. Use with caution.
+                </div>
+
+                <!-- System Prompt Editor -->
                 <div class="panel">
-                    <div class="placeholder-view">
-                        <div class="placeholder-icon">⚙️</div>
-                        <h2 class="placeholder-title">Configuration Editor</h2>
-                        <p class="placeholder-text">System configuration management coming soon.<br>This section will allow you to edit AI prompts, settings, and system parameters.</p>
+                    <div class="panel-header">
+                        <h3>🤖 AI System Prompt</h3>
+                        <button class="btn btn-sm btn-primary" onclick="saveSystemPrompt()">
+                            <span>💾 Save Prompt</span>
+                        </button>
+                    </div>
+                    <div class="panel-body">
+                        <textarea id="systemPromptEditor" class="config-textarea" placeholder="Loading system prompt..."></textarea>
+                        <div class="config-note">
+                            Note: Changes to the system prompt are temporary. To persist, modify the buildSystemPrompt() method in aiService.js
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Configuration Settings by Category -->
+                <div id="configCategories">
+                    <div class="empty-state">Loading configuration...</div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <h3>💾 Save Configuration</h3>
+                    </div>
+                    <div class="panel-body">
+                        <button class="btn btn-primary btn-large" onclick="saveAllConfig()">
+                            Save All Changes to .env
+                        </button>
+                        <div class="config-note">
+                            This will update your .env file. The bot must be restarted for changes to take effect.
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1586,6 +1985,10 @@
                 loadTranscripts();
             } else if (viewName === 'blacklist') {
                 fetchBlacklist();
+            } else if (viewName === 'documentation') {
+                loadDocsView();
+            } else if (viewName === 'configuration') {
+                loadConfigView();
             }
 
             // Close mobile sidebar
@@ -2152,6 +2555,460 @@
             } catch (error) {
                 console.error('Error deleting transcript:', error);
                 alert('Failed to delete transcript');
+            }
+        }
+
+        // ===== DOCUMENTATION MANAGEMENT FUNCTIONS =====
+
+        let currentDocPath = null;
+        let currentDocContent = null;
+        let docsStructure = [];
+
+        async function loadDocsView() {
+            await loadDocsBrowser();
+            await loadDocsStats();
+        }
+
+        async function loadDocsBrowser() {
+            const docsBrowser = document.getElementById('docsBrowser');
+
+            try {
+                const response = await fetch('/api/docs');
+                const structure = await response.json();
+                docsStructure = structure;
+
+                if (structure.length === 0) {
+                    docsBrowser.innerHTML = '<div class="empty-state">No documentation files found</div>';
+                    return;
+                }
+
+                docsBrowser.innerHTML = renderDocsTree(structure);
+            } catch (error) {
+                console.error('Error loading docs browser:', error);
+                docsBrowser.innerHTML = '<div class="empty-state">Error loading files</div>';
+            }
+        }
+
+        function renderDocsTree(items, level = 0) {
+            let html = '';
+
+            for (const item of items) {
+                if (item.type === 'directory') {
+                    const id = `folder-${item.path.replace(/[^a-z0-9]/gi, '-')}`;
+                    html += `
+                        <div class="docs-tree-folder">
+                            <div class="docs-tree-item" onclick="toggleFolder('${id}')">
+                                <span class="docs-tree-toggle" id="toggle-${id}">▶</span>
+                                <span>📁 ${escapeHtml(item.name)}</span>
+                            </div>
+                            <div class="docs-tree-children" id="${id}" style="display: none;">
+                                ${renderDocsTree(item.children, level + 1)}
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    html += `
+                        <div class="docs-tree-item" onclick="openDocFile('${item.path}')" data-path="${item.path}">
+                            <span style="width: 16px;"></span>
+                            <span>📄 ${escapeHtml(item.name)}</span>
+                        </div>
+                    `;
+                }
+            }
+
+            return html;
+        }
+
+        function toggleFolder(folderId) {
+            const folder = document.getElementById(folderId);
+            const toggle = document.getElementById(`toggle-${folderId}`);
+
+            if (folder.style.display === 'none') {
+                folder.style.display = 'block';
+                toggle.textContent = '▼';
+            } else {
+                folder.style.display = 'none';
+                toggle.textContent = '▶';
+            }
+        }
+
+        async function openDocFile(filePath) {
+            try {
+                const response = await fetch(`/api/docs/file?path=${encodeURIComponent(filePath)}`);
+                const fileData = await response.json();
+
+                currentDocPath = filePath;
+                currentDocContent = fileData.content;
+
+                // Update UI
+                document.getElementById('currentDocTitle').textContent = `📄 ${filePath}`;
+                document.getElementById('editorPath').textContent = filePath;
+                document.getElementById('editorMeta').textContent = `Size: ${formatFileSize(fileData.size)} | Modified: ${formatTime(new Date(fileData.modified).getTime())}`;
+                document.getElementById('docContent').value = fileData.content;
+
+                // Show editor, hide placeholder
+                document.querySelector('.docs-placeholder').style.display = 'none';
+                document.getElementById('docsEditor').style.display = 'flex';
+
+                // Enable buttons
+                document.getElementById('saveDocBtn').disabled = false;
+                document.getElementById('deleteDocBtn').disabled = false;
+
+                // Highlight selected file
+                document.querySelectorAll('.docs-tree-item').forEach(item => {
+                    item.classList.remove('selected');
+                });
+                document.querySelector(`[data-path="${filePath}"]`)?.classList.add('selected');
+
+                // Track changes
+                document.getElementById('docContent').addEventListener('input', function() {
+                    if (this.value !== currentDocContent) {
+                        document.getElementById('saveDocBtn').textContent = '💾 Save *';
+                    } else {
+                        document.getElementById('saveDocBtn').textContent = '💾 Save';
+                    }
+                });
+            } catch (error) {
+                console.error('Error opening doc file:', error);
+                alert('Failed to load file');
+            }
+        }
+
+        async function saveCurrentDoc() {
+            if (!currentDocPath) return;
+
+            const newContent = document.getElementById('docContent').value;
+
+            try {
+                const response = await fetch('/api/docs/file', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        path: currentDocPath,
+                        content: newContent
+                    })
+                });
+
+                if (response.ok) {
+                    currentDocContent = newContent;
+                    document.getElementById('saveDocBtn').textContent = '💾 Save';
+                    alert('File saved successfully!');
+                    loadDocsStats(); // Refresh stats
+                } else {
+                    const error = await response.text();
+                    alert(`Failed to save file: ${error}`);
+                }
+            } catch (error) {
+                console.error('Error saving doc:', error);
+                alert('Failed to save file');
+            }
+        }
+
+        async function deleteCurrentDoc() {
+            if (!currentDocPath) return;
+
+            if (!confirm(`Are you sure you want to delete ${currentDocPath}?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/docs/file?path=${encodeURIComponent(currentDocPath)}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    // Clear editor
+                    currentDocPath = null;
+                    currentDocContent = null;
+                    document.getElementById('currentDocTitle').textContent = '📄 No file selected';
+                    document.querySelector('.docs-placeholder').style.display = 'flex';
+                    document.getElementById('docsEditor').style.display = 'none';
+                    document.getElementById('saveDocBtn').disabled = true;
+                    document.getElementById('deleteDocBtn').disabled = true;
+
+                    // Refresh browser
+                    loadDocsBrowser();
+                    loadDocsStats();
+
+                    alert('File deleted successfully!');
+                } else {
+                    const error = await response.text();
+                    alert(`Failed to delete file: ${error}`);
+                }
+            } catch (error) {
+                console.error('Error deleting doc:', error);
+                alert('Failed to delete file');
+            }
+        }
+
+        async function uploadDocFile() {
+            const filePath = prompt('Enter file path (e.g., guides/my-guide.md):');
+            if (!filePath) return;
+
+            const content = prompt('Enter file content or paste markdown:');
+            if (content === null) return;
+
+            try {
+                const response = await fetch('/api/docs/file', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        path: filePath,
+                        content: content
+                    })
+                });
+
+                if (response.ok) {
+                    alert('File created successfully!');
+                    loadDocsBrowser();
+                    loadDocsStats();
+                    openDocFile(filePath);
+                } else {
+                    const error = await response.text();
+                    alert(`Failed to create file: ${error}`);
+                }
+            } catch (error) {
+                console.error('Error uploading doc:', error);
+                alert('Failed to create file');
+            }
+        }
+
+        async function reloadDocs() {
+            if (!confirm('Reload all documentation from disk? This will refresh the AI knowledge base.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/docs/reload', { method: 'POST' });
+
+                if (response.ok) {
+                    alert('Documentation reloaded successfully!');
+                    loadDocsBrowser();
+                    loadDocsStats();
+                } else {
+                    alert('Failed to reload documentation');
+                }
+            } catch (error) {
+                console.error('Error reloading docs:', error);
+                alert('Failed to reload documentation');
+            }
+        }
+
+        async function loadDocsStats() {
+            try {
+                const response = await fetch('/api/docs/stats');
+                const stats = await response.json();
+
+                document.getElementById('statTotalDocs').textContent = stats.totalDocs || 0;
+                document.getElementById('statCategories').textContent = Object.keys(stats.categories || {}).length;
+                document.getElementById('statTags').textContent = Object.keys(stats.tags || {}).length;
+            } catch (error) {
+                console.error('Error loading docs stats:', error);
+            }
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes < 1024) return bytes + ' B';
+            if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+            return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+        }
+
+        // ===== CONFIGURATION MANAGEMENT FUNCTIONS =====
+
+        let configData = {};
+        let configChanges = {};
+
+        async function loadConfigView() {
+            await loadSystemPrompt();
+            await loadConfiguration();
+        }
+
+        async function loadSystemPrompt() {
+            try {
+                const response = await fetch('/api/config/system-prompt');
+                const data = await response.json();
+
+                document.getElementById('systemPromptEditor').value = data.systemPrompt || '';
+            } catch (error) {
+                console.error('Error loading system prompt:', error);
+                document.getElementById('systemPromptEditor').value = 'Error loading system prompt';
+            }
+        }
+
+        async function saveSystemPrompt() {
+            const systemPrompt = document.getElementById('systemPromptEditor').value;
+
+            if (!systemPrompt.trim()) {
+                alert('System prompt cannot be empty');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/config/system-prompt', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ systemPrompt })
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    alert(result.message + (result.warning ? '\n\n' + result.warning : ''));
+                } else {
+                    const error = await response.text();
+                    alert(`Failed to save system prompt: ${error}`);
+                }
+            } catch (error) {
+                console.error('Error saving system prompt:', error);
+                alert('Failed to save system prompt');
+            }
+        }
+
+        async function loadConfiguration() {
+            const configCategories = document.getElementById('configCategories');
+
+            try {
+                const response = await fetch('/api/config/categorized');
+                const config = await response.json();
+
+                if (config.error) {
+                    configCategories.innerHTML = `<div class="empty-state">Error: ${config.error}</div>`;
+                    return;
+                }
+
+                configData = config;
+                configChanges = {};
+
+                // Render configuration by category
+                let html = '';
+
+                for (const [category, fields] of Object.entries(config)) {
+                    html += `
+                        <div class="panel">
+                            <div class="panel-header">
+                                <h3 class="config-category-title">${escapeHtml(category)} Settings</h3>
+                            </div>
+                            <div class="panel-body">
+                                ${Object.entries(fields).map(([key, field]) => renderConfigField(key, field)).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                configCategories.innerHTML = html;
+            } catch (error) {
+                console.error('Error loading configuration:', error);
+                configCategories.innerHTML = '<div class="empty-state">Error loading configuration</div>';
+            }
+        }
+
+        function renderConfigField(key, field) {
+            const value = field.value !== undefined ? field.value : '';
+            const displayValue = field.masked ? '********' : value;
+
+            let inputHtml = '';
+
+            if (field.type === 'boolean') {
+                inputHtml = `
+                    <div class="config-field-checkbox">
+                        <input type="checkbox"
+                               id="config-${key}"
+                               ${value === true ? 'checked' : ''}
+                               onchange="updateConfigValue('${key}', this.checked)">
+                        <label for="config-${key}">${field.description}</label>
+                    </div>
+                `;
+            } else if (field.options) {
+                inputHtml = `
+                    <div class="config-field-options">
+                        ${field.options.map(opt => `
+                            <div class="config-field-option ${value === opt ? 'selected' : ''}"
+                                 onclick="selectConfigOption('${key}', '${opt}')">
+                                ${escapeHtml(opt)}
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } else {
+                const inputType = field.type === 'number' ? 'number' : 'text';
+                const extraAttrs = field.type === 'number' && field.min !== undefined ?
+                    `min="${field.min}" max="${field.max || ''}"` : '';
+
+                inputHtml = `
+                    <input type="${inputType}"
+                           id="config-${key}"
+                           class="config-field-input ${field.masked ? 'masked' : ''}"
+                           value="${escapeHtml(displayValue.toString())}"
+                           ${field.masked ? 'placeholder="Enter new value to change"' : ''}
+                           ${extraAttrs}
+                           oninput="updateConfigValue('${key}', this.value)">
+                `;
+            }
+
+            return `
+                <div class="config-field">
+                    <label class="config-field-label">
+                        ${escapeHtml(key)}
+                        ${field.required ? '<span class="config-field-required">*</span>' : ''}
+                    </label>
+                    <span class="config-field-description">${escapeHtml(field.description)}</span>
+                    ${inputHtml}
+                    <div class="config-field-meta">
+                        <span>Type: ${field.type}</span>
+                        ${field.default !== undefined ? `<span>Default: ${field.default}</span>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateConfigValue(key, value) {
+            configChanges[key] = value;
+        }
+
+        function selectConfigOption(key, option) {
+            // Update UI
+            const container = event.target.closest('.config-field-options');
+            container.querySelectorAll('.config-field-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+
+            // Update value
+            updateConfigValue(key, option);
+        }
+
+        async function saveAllConfig() {
+            if (Object.keys(configChanges).length === 0) {
+                alert('No changes to save');
+                return;
+            }
+
+            if (!confirm('Save all configuration changes to .env file?\n\nThe bot will need to be restarted for changes to take effect.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/config', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(configChanges)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    alert(result.message + (result.warning ? '\n\n' + result.warning : ''));
+                    configChanges = {};
+                    loadConfiguration(); // Reload to show saved values
+                } else {
+                    const result = await response.json();
+                    if (result.errors) {
+                        alert('Validation errors:\n\n' + result.errors.join('\n'));
+                    } else {
+                        alert('Failed to save configuration');
+                    }
+                }
+            } catch (error) {
+                console.error('Error saving configuration:', error);
+                alert('Failed to save configuration');
             }
         }
 

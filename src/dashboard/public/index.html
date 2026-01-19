@@ -177,6 +177,76 @@
             padding: 15px;
             margin-bottom: 15px;
             border-radius: 8px;
+            position: relative;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        .error-item:hover .close-btn {
+            opacity: 1;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: #ff6b6b;
+            color: white;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
+            opacity: 0.7;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .close-btn:hover {
+            background: #ff5252;
+            transform: scale(1.1);
+            opacity: 1;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #3a4266;
+            padding-bottom: 10px;
+        }
+
+        .panel-header h2 {
+            margin-bottom: 0;
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .clear-all-btn {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .clear-all-btn:hover {
+            background: #ff5252;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .clear-all-btn:active {
+            transform: translateY(0);
         }
 
         .error-time {
@@ -242,12 +312,17 @@
             padding: 18px;
             margin-bottom: 18px;
             border-radius: 8px;
-            transition: all 0.2s;
+            position: relative;
+            transition: opacity 0.3s, transform 0.3s;
         }
 
         .spam-item:hover {
             background: #4d2828;
             transform: translateX(3px);
+        }
+
+        .spam-item:hover .close-btn {
+            opacity: 1;
         }
 
         .spam-header {
@@ -450,7 +525,10 @@
             </div>
 
             <div class="panel">
-                <h2>⚠️ Recent Errors</h2>
+                <div class="panel-header">
+                    <h2>⚠️ Recent Errors</h2>
+                    <button class="clear-all-btn" onclick="clearAllErrors()">Clear All</button>
+                </div>
                 <div id="errors">
                     <div class="empty-state">No errors</div>
                 </div>
@@ -465,7 +543,10 @@
         </div>
 
         <div class="panel">
-            <h2>🚫 Spam Detection</h2>
+            <div class="panel-header">
+                <h2>🚫 Spam Detection</h2>
+                <button class="clear-all-btn" onclick="clearAllSpam()">Clear All</button>
+            </div>
             <div id="spam">
                 <div class="empty-state">No spam detected</div>
             </div>
@@ -606,7 +687,8 @@
             }
 
             errorsDiv.innerHTML = errors.slice(-10).reverse().map(error => `
-                <div class="error-item">
+                <div class="error-item" data-timestamp="${error.timestamp}">
+                    <button class="close-btn" onclick="removeError(${error.timestamp})" title="Remove this error">×</button>
                     <div class="error-time">${formatTime(error.timestamp)}</div>
                     <div class="error-message">${escapeHtml(error.message)}</div>
                     ${error.stack ? `<div class="error-stack">${escapeHtml(error.stack.substring(0, 300))}</div>` : ''}
@@ -642,7 +724,8 @@
             }
 
             spamDiv.innerHTML = spam.slice(-20).map(sp => `
-                <div class="spam-item">
+                <div class="spam-item" data-timestamp="${sp.timestamp}">
+                    <button class="close-btn" onclick="removeSpam(${sp.timestamp})" title="Remove this spam entry">×</button>
                     <div class="spam-header">
                         <span class="spam-username">${escapeHtml(sp.username)}</span>
                         <span class="spam-reason">${sp.reason.replace(/_/g, ' ')}</span>
@@ -734,6 +817,68 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        // Clear individual error
+        function removeError(timestamp) {
+            const errorItem = document.querySelector(`.error-item[data-timestamp="${timestamp}"]`);
+            if (errorItem) {
+                errorItem.style.opacity = '0';
+                errorItem.style.transform = 'translateX(-20px)';
+                setTimeout(() => {
+                    errorItem.remove();
+                    // Check if no errors left
+                    const remainingErrors = document.querySelectorAll('.error-item');
+                    if (remainingErrors.length === 0) {
+                        errorsDiv.innerHTML = '<div class="empty-state">No errors</div>';
+                    }
+                }, 300);
+            }
+        }
+
+        // Clear all errors
+        function clearAllErrors() {
+            const errorItems = document.querySelectorAll('.error-item');
+            errorItems.forEach((item, index) => {
+                setTimeout(() => {
+                    item.style.opacity = '0';
+                    item.style.transform = 'translateX(-20px)';
+                }, index * 50);
+            });
+            setTimeout(() => {
+                errorsDiv.innerHTML = '<div class="empty-state">No errors</div>';
+            }, errorItems.length * 50 + 300);
+        }
+
+        // Clear individual spam
+        function removeSpam(timestamp) {
+            const spamItem = document.querySelector(`.spam-item[data-timestamp="${timestamp}"]`);
+            if (spamItem) {
+                spamItem.style.opacity = '0';
+                spamItem.style.transform = 'translateX(-20px)';
+                setTimeout(() => {
+                    spamItem.remove();
+                    // Check if no spam left
+                    const remainingSpam = document.querySelectorAll('.spam-item');
+                    if (remainingSpam.length === 0) {
+                        spamDiv.innerHTML = '<div class="empty-state">No spam detected</div>';
+                    }
+                }, 300);
+            }
+        }
+
+        // Clear all spam
+        function clearAllSpam() {
+            const spamItems = document.querySelectorAll('.spam-item');
+            spamItems.forEach((item, index) => {
+                setTimeout(() => {
+                    item.style.opacity = '0';
+                    item.style.transform = 'translateX(-20px)';
+                }, index * 50);
+            });
+            setTimeout(() => {
+                spamDiv.innerHTML = '<div class="empty-state">No spam detected</div>';
+            }, spamItems.length * 50 + 300);
         }
 
         autoScrollToggle.addEventListener('click', () => {

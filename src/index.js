@@ -8,7 +8,7 @@ const config = {
   supportChannelId: process.env.SUPPORT_CHANNEL_ID,
   negativeFeedbackChannelId: process.env.NEGATIVE_FEEDBACK_CHANNEL_ID,
   anthropicApiKey: process.env.ANTHROPIC_API_KEY,
-  aiModel: process.env.AI_MODEL || 'claude-sonnet-4-20250514',
+  aiModel: process.env.AI_MODEL || 'claude-3-5-haiku-20241022',
   maxConversationHistory: parseInt(process.env.MAX_CONVERSATION_HISTORY) || 10,
   botName: process.env.BOT_NAME || 'Support Bot',
   dashboardPort: parseInt(process.env.DASHBOARD_PORT) || 3000,

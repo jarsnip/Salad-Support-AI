@@ -14,6 +14,48 @@ class DocsManager {
     this.embeddings = new Map(); // Store embeddings for semantic search
     this.anthropicClient = null; // Will be initialized if API key is available
     this.maxResults = 10; // Option 4: Limit search results to top 10
+
+    // Synonym mapping with broken English variations
+    this.synonyms = {
+      // Performance issues
+      'crash': ['fail', 'stop', 'freeze', 'hang', 'error', 'broke', 'broken', 'not work', 'no work', 'doesnt work', 'wont work'],
+      'slow': ['lag', 'laggy', 'performance', 'sluggish', 'slowing', 'takes long time', 'very slow', 'too slow'],
+      'freeze': ['hang', 'stuck', 'stop respond', 'not responding', 'froze', 'frozen'],
+
+      // Money/earnings
+      'money': ['earnings', 'balance', 'rewards', 'payment', 'cash', 'dollar', 'pay', 'paid', 'payout'],
+      'withdraw': ['cash out', 'payout', 'transfer', 'get money', 'take money', 'redeem'],
+      'earnings': ['balance', 'money', 'income', 'profit', 'made', 'earned', 'how much'],
+
+      // Installation
+      'install': ['setup', 'download', 'get started', 'start use', 'begin', 'instal', 'intall'],
+      'download': ['get', 'install', 'fetch', 'grab', 'downlod', 'donwload'],
+
+      // Connection issues
+      'disconnect': ['offline', 'connection lost', 'no connection', 'cant connect', 'not connect', 'disconnected'],
+      'offline': ['not online', 'no internet', 'connection', 'disconnect', 'cant connect'],
+
+      // Account issues
+      'banned': ['suspended', 'blocked', 'locked', 'ban', 'suspend', 'cant login', 'cant access'],
+      'login': ['sign in', 'log in', 'access', 'enter', 'cant login', 'cant sign in'],
+      'verification': ['verify', 'confirm', 'proof', 'check', 'validated', 'verification'],
+
+      // Hardware
+      'gpu': ['graphics card', 'video card', 'nvidia', 'amd', 'radeon', 'gtx', 'rtx'],
+      'cpu': ['processor', 'intel', 'amd ryzen', 'ryzen'],
+
+      // Software conflicts
+      'antivirus': ['anti virus', 'av', 'defender', 'windows defender', 'firewall', 'security'],
+      'firewall': ['blocked', 'blocking', 'security', 'antivirus'],
+
+      // Common broken English patterns
+      'not working': ['no work', 'doesnt work', 'dont work', 'not work', 'no working', 'not works'],
+      'how to': ['how i', 'how do i', 'how can i', 'how i can', 'what i do'],
+      'why': ['y', 'how come', 'reason', 'what reason'],
+      'help': ['pls help', 'please help', 'need help', 'help me', 'halp', 'plz'],
+      'fix': ['repair', 'solve', 'resolve', 'fixed', 'fixing']
+    };
+
     this.loadDocs();
     this.initializeEmbeddings();
   }
@@ -42,7 +84,7 @@ class DocsManager {
     return null;
   }
 
-  // OPTION 3: Detect tags/topics from content and path
+  // OPTION 3: Detect tags/topics from content and path (EXPANDED)
   extractTags(content, filePath) {
     const tags = new Set();
     const relativePath = path.relative(this.docsPath, filePath).toLowerCase();
@@ -56,29 +98,59 @@ class DocsManager {
     // Topic-based tags from path and content
     const contentLower = content.toLowerCase();
 
-    // Hardware
-    if (contentLower.includes('gpu') || relativePath.includes('gpu')) tags.add('gpu');
-    if (contentLower.includes('cpu') || relativePath.includes('cpu')) tags.add('cpu');
+    // Hardware - expanded
+    if (contentLower.match(/gpu|graphics card|video card|nvidia|amd radeon|rtx|gtx/)) tags.add('gpu');
+    if (contentLower.match(/cpu|processor|intel|ryzen/)) tags.add('cpu');
+    if (contentLower.match(/ram|memory/)) tags.add('ram');
+    if (contentLower.match(/driver|drivers/)) tags.add('drivers');
 
-    // Job types
-    if (contentLower.includes('container') || contentLower.includes('workload')) tags.add('container');
-    if (contentLower.includes('mining') || contentLower.includes('miner')) tags.add('mining');
-    if (contentLower.includes('bandwidth')) tags.add('bandwidth');
+    // Job types - expanded
+    if (contentLower.match(/container|docker|workload/)) tags.add('container');
+    if (contentLower.match(/mining|miner|crypto/)) tags.add('mining');
+    if (contentLower.match(/bandwidth|network speed/)) tags.add('bandwidth');
+    if (contentLower.match(/transcoding|rendering/)) tags.add('transcoding');
 
-    // Common issues
-    if (contentLower.includes('error') || contentLower.includes('fail')) tags.add('error');
-    if (contentLower.includes('download') || contentLower.includes('install')) tags.add('installation');
-    if (contentLower.includes('antivirus') || contentLower.includes('firewall')) tags.add('antivirus');
-    if (contentLower.includes('virtualization') || contentLower.includes('wsl')) tags.add('virtualization');
+    // Performance issues - NEW
+    if (contentLower.match(/crash|crashing|crashed/)) tags.add('crash');
+    if (contentLower.match(/\bslow\b|lag|laggy|performance|sluggish/)) tags.add('performance');
+    if (contentLower.match(/freeze|freezing|frozen|hang|stuck/)) tags.add('freeze');
+    if (contentLower.match(/overheat|temperature|thermal/)) tags.add('overheating');
 
-    // Account & earnings
-    if (contentLower.includes('earning') || contentLower.includes('balance')) tags.add('earnings');
-    if (contentLower.includes('account') || contentLower.includes('login')) tags.add('account');
-    if (contentLower.includes('redeem') || contentLower.includes('reward')) tags.add('rewards');
+    // Connection issues - NEW
+    if (contentLower.match(/disconnect|disconnected|disconnecting/)) tags.add('connection');
+    if (contentLower.match(/offline|not online|no connection/)) tags.add('offline');
+    if (contentLower.match(/internet|network|wifi|ethernet/)) tags.add('network');
 
-    // Settings
-    if (contentLower.includes('settings') || contentLower.includes('config')) tags.add('settings');
-    if (contentLower.includes('sleep mode')) tags.add('sleep-mode');
+    // Common issues - expanded
+    if (contentLower.match(/error|fail|failed|failure/)) tags.add('error');
+    if (contentLower.match(/download|install|setup|installation/)) tags.add('installation');
+    if (contentLower.match(/antivirus|firewall|defender|security software/)) tags.add('antivirus');
+    if (contentLower.match(/virtualization|wsl|hyper-v|virtual machine/)) tags.add('virtualization');
+    if (contentLower.match(/permission|access denied|administrator/)) tags.add('permissions');
+
+    // Account & earnings - expanded
+    if (contentLower.match(/earning|earnings|balance|income/)) tags.add('earnings');
+    if (contentLower.match(/account|profile|user/)) tags.add('account');
+    if (contentLower.match(/redeem|reward|cash out|withdraw|payout/)) tags.add('rewards');
+    if (contentLower.match(/payment|pay|paid|transfer/)) tags.add('payment');
+    if (contentLower.match(/\bban\b|banned|suspend|suspended|blocked/)) tags.add('banned');
+    if (contentLower.match(/login|log in|sign in|authentication/)) tags.add('login');
+    if (contentLower.match(/verif|2fa|two factor/)) tags.add('verification');
+
+    // Settings - expanded
+    if (contentLower.match(/settings|configuration|config|preferences/)) tags.add('settings');
+    if (contentLower.match(/sleep mode|power sav/)) tags.add('sleep-mode');
+    if (contentLower.match(/notification|alert/)) tags.add('notifications');
+
+    // Operating systems - NEW
+    if (contentLower.match(/windows|win10|win11/)) tags.add('windows');
+    if (contentLower.match(/linux|ubuntu/)) tags.add('linux');
+    if (contentLower.match(/mac|macos|osx/)) tags.add('mac');
+
+    // Application issues - NEW
+    if (contentLower.match(/not working|doesnt work|won't work|broken/)) tags.add('not-working');
+    if (contentLower.match(/update|updating|upgrade/)) tags.add('update');
+    if (contentLower.match(/uninstall|remove|delete/)) tags.add('uninstall');
 
     return Array.from(tags);
   }
@@ -211,7 +283,7 @@ class DocsManager {
     return Array.from(phrases);
   }
 
-  // OPTION 1: Semantic search using key phrases
+  // OPTION 1: Semantic search using key phrases with synonym expansion
   semanticSearch(query) {
     const queryLower = query.toLowerCase();
     const queryPhrases = this.extractKeyPhrases(query);
@@ -222,6 +294,41 @@ class DocsManager {
     const queryWords = queryLower
       .split(/\s+/)
       .filter(word => word.length > 2 && !commonWords.includes(word));
+
+    // Expand query with synonyms to handle broken English and variations
+    const expandedTerms = new Set([...queryWords, queryLower]);
+
+    // Check for multi-word phrases in synonyms first (e.g., "not working", "cant connect")
+    for (const [key, synonyms] of Object.entries(this.synonyms)) {
+      // Check if the full query or multi-word synonyms match
+      if (queryLower.includes(key)) {
+        expandedTerms.add(key);
+        synonyms.forEach(syn => expandedTerms.add(syn));
+      }
+
+      // Check if any synonym phrase is in the query
+      for (const syn of synonyms) {
+        if (queryLower.includes(syn)) {
+          expandedTerms.add(key);
+          synonyms.forEach(s => expandedTerms.add(s));
+          break;
+        }
+      }
+    }
+
+    // Then check individual words
+    for (const word of queryWords) {
+      for (const [key, synonyms] of Object.entries(this.synonyms)) {
+        // If the word matches a key or any synonym, add all related terms
+        if (key === word || synonyms.includes(word)) {
+          expandedTerms.add(key);
+          synonyms.forEach(syn => expandedTerms.add(syn));
+        }
+      }
+    }
+
+    // Convert expanded terms to array for easier processing
+    const expandedWordsArray = Array.from(expandedTerms);
 
     for (const [name, doc] of this.docs) {
       let score = 0;
@@ -236,17 +343,18 @@ class DocsManager {
         }
       });
 
-      // Check for tag matches (OPTION 3)
+      // Check for tag matches with expanded terms (OPTION 3)
       if (doc.tags) {
         doc.tags.forEach(tag => {
-          if (queryLower.includes(tag) || queryWords.includes(tag)) {
+          // Check against both original query and expanded terms
+          if (queryLower.includes(tag) || expandedWordsArray.includes(tag)) {
             score += 8; // High weight for tag matches
           }
         });
       }
 
-      // Individual keyword matching (more flexible than full string match)
-      queryWords.forEach(word => {
+      // Individual keyword matching using EXPANDED terms (handles synonyms)
+      expandedWordsArray.forEach(word => {
         if (contentLower.includes(word)) {
           score += 4; // Medium-high weight for keyword in content
         }
@@ -255,10 +363,17 @@ class DocsManager {
         }
       });
 
-      // Bonus for title/name exact matches
+      // Bonus for title/name exact matches (original query and expanded)
       if (nameLower.includes(queryLower)) {
         score += 15;
       }
+
+      // Additional bonus if any expanded term is in the name
+      expandedWordsArray.forEach(term => {
+        if (nameLower.includes(term) && term !== queryLower) {
+          score += 3; // Bonus for synonym matches in name
+        }
+      });
 
       if (score > 0) {
         scoredResults.push({ doc, score });

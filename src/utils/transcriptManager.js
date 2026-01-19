@@ -27,6 +27,7 @@ class TranscriptManager {
         createdAt: conversation.createdAt,
         endedAt: Date.now(),
         messageCount: conversation.messages.length,
+        feedback: conversation.feedback || null, // Include feedback data
         messages: conversation.messages.map(msg => ({
           role: msg.role,
           content: msg.content,

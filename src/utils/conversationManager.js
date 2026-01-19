@@ -18,7 +18,8 @@ class ConversationManager {
         originalPosterId: null,
         originalPosterUsername: null,
         ended: false,
-        deleteScheduled: null
+        deleteScheduled: null,
+        feedback: null // Store conversation feedback
       });
     }
     return this.conversations.get(threadId);
@@ -52,6 +53,16 @@ class ConversationManager {
   isOriginalPoster(threadId, userId) {
     const conversation = this.getConversation(threadId);
     return conversation.originalPosterId === userId;
+  }
+
+  setFeedback(threadId, feedbackData) {
+    const conversation = this.getConversation(threadId);
+    conversation.feedback = {
+      type: feedbackData.type,
+      userId: feedbackData.userId,
+      username: feedbackData.username,
+      timestamp: feedbackData.timestamp
+    };
   }
 
   addMessage(threadId, role, content, userId = null) {
@@ -147,6 +158,9 @@ class ConversationManager {
 
     const startTime = new Date(conversation.createdAt).toLocaleString();
     const endTime = new Date(conversation.lastActivity).toLocaleString();
+    const hasFeedback = conversation.feedback && conversation.feedback.type;
+    const feedbackEmoji = hasFeedback ? (conversation.feedback.type === 'positive' ? '👍' : '👎') : '';
+    const feedbackText = hasFeedback ? (conversation.feedback.type === 'positive' ? 'Positive' : 'Negative') : 'No feedback';
 
     let html = `
 <!DOCTYPE html>
@@ -170,6 +184,8 @@ class ConversationManager {
             --accent-color: #90FF75;
             --accent-hover: #7ce65e;
             --footer-text: #999;
+            --positive-color: #90FF75;
+            --negative-color: #ff6b6b;
         }
 
         [data-theme="dark"] {
@@ -183,6 +199,8 @@ class ConversationManager {
             --accent-color: #90FF75;
             --accent-hover: #7ce65e;
             --footer-text: #888;
+            --positive-color: #90FF75;
+            --negative-color: #ff6b6b;
         }
 
         * {
@@ -236,6 +254,30 @@ class ConversationManager {
         .header .info {
             font-size: 0.9em;
             opacity: 0.9;
+        }
+
+        .feedback-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        .feedback-badge.positive {
+            background: var(--positive-color);
+            color: #1a1a2e;
+        }
+
+        .feedback-badge.negative {
+            background: var(--negative-color);
+            color: white;
+        }
+
+        .feedback-badge.none {
+            background: var(--border-color);
+            color: var(--text-color);
         }
 
         .message {
@@ -302,7 +344,8 @@ class ConversationManager {
         <div class="info">
             Started: ${startTime}<br>
             Ended: ${endTime}<br>
-            Thread ID: ${threadId}
+            Thread ID: ${threadId}<br>
+            <span class="feedback-badge ${hasFeedback ? conversation.feedback.type : 'none'}">${feedbackEmoji} ${feedbackText}</span>
         </div>
     </div>
     <div class="messages">

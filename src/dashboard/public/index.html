@@ -842,10 +842,6 @@
                 <div class="stat-label">Total Messages</div>
             </div>
             <div class="stat-card">
-                <div class="stat-value" id="feedbackCount">0</div>
-                <div class="stat-label">Feedback Received</div>
-            </div>
-            <div class="stat-card">
                 <div class="stat-value" id="spamCount">0</div>
                 <div class="stat-label">Spam Blocked</div>
             </div>
@@ -1028,7 +1024,6 @@
         function updateStats(stats) {
             document.getElementById('activeConversations').textContent = stats.activeConversations || 0;
             document.getElementById('totalMessages').textContent = stats.totalMessages || 0;
-            document.getElementById('feedbackCount').textContent = stats.feedback || 0;
             document.getElementById('spamCount').textContent = stats.spam || 0;
             document.getElementById('bannedCount').textContent = stats.banned || 0;
             document.getElementById('blacklistCount').textContent = stats.blacklisted || 0;

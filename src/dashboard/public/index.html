@@ -1714,6 +1714,18 @@
                         <div class="stat-value" id="homeBlacklisted">0</div>
                         <div class="stat-label">Blacklisted</div>
                     </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="homeTotalDocs">-</div>
+                        <div class="stat-label">Total Documents</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="homeCategories">-</div>
+                        <div class="stat-label">Doc Categories</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="homeTags">-</div>
+                        <div class="stat-label">Doc Tags</div>
+                    </div>
                 </div>
 
                 <div class="content-grid">
@@ -1892,29 +1904,6 @@
                                         <span id="editorMeta"></span>
                                     </div>
                                     <textarea id="docContent" class="doc-textarea"></textarea>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Stats Panel -->
-                        <div class="panel">
-                            <div class="panel-header">
-                                <h3>📊 Documentation Stats</h3>
-                            </div>
-                            <div class="panel-body">
-                                <div id="docsStats" class="stats-grid">
-                                    <div class="stat-card">
-                                        <div class="stat-label">Total Documents</div>
-                                        <div class="stat-value" id="statTotalDocs">-</div>
-                                    </div>
-                                    <div class="stat-card">
-                                        <div class="stat-label">Categories</div>
-                                        <div class="stat-value" id="statCategories">-</div>
-                                    </div>
-                                    <div class="stat-card">
-                                        <div class="stat-label">Tags</div>
-                                        <div class="stat-value" id="statTags">-</div>
-                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -2911,9 +2900,14 @@
                 const response = await fetch('/api/docs/stats');
                 const stats = await response.json();
 
-                document.getElementById('statTotalDocs').textContent = stats.totalDocs || 0;
-                document.getElementById('statCategories').textContent = Object.keys(stats.categories || {}).length;
-                document.getElementById('statTags').textContent = Object.keys(stats.tags || {}).length;
+                // Update home view documentation stats
+                const homeTotalDocs = document.getElementById('homeTotalDocs');
+                const homeCategories = document.getElementById('homeCategories');
+                const homeTags = document.getElementById('homeTags');
+
+                if (homeTotalDocs) homeTotalDocs.textContent = stats.totalDocs || 0;
+                if (homeCategories) homeCategories.textContent = Object.keys(stats.categories || {}).length;
+                if (homeTags) homeTags.textContent = Object.keys(stats.tags || {}).length;
             } catch (error) {
                 console.error('Error loading docs stats:', error);
             }
@@ -3137,6 +3131,7 @@
             fetchStats();
             fetchSpam();
             fetchBanned();
+            loadDocsStats();
         }
 
         function updateUptime() {

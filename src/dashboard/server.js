@@ -237,7 +237,9 @@ export class DashboardServer {
     // IMPORTANT: This must be defined BEFORE the :threadId routes to avoid matching "download-all" as a threadId
     this.app.get('/api/transcripts/download-all', (req, res) => {
       try {
-        const transcripts = this.bot.conversationManager.listTranscripts();
+        // Get all transcripts with a very large limit
+        const result = this.bot.conversationManager.listTranscripts(10000, 0);
+        const transcripts = result.transcripts;
 
         if (transcripts.length === 0) {
           return res.status(404).send('No transcripts found');
@@ -262,21 +264,28 @@ export class DashboardServer {
         archive.pipe(res);
 
         // Add each transcript as HTML file to the zip
-        for (const transcript of transcripts) {
+        for (const transcriptSummary of transcripts) {
+          // Load the full transcript data (including messages)
+          const fullTranscript = this.bot.conversationManager.getTranscript(transcriptSummary.threadId);
+
+          if (!fullTranscript || !fullTranscript.messages) {
+            continue; // Skip if transcript can't be loaded
+          }
+
           const conversationObj = {
-            threadId: transcript.threadId,
-            originalPosterUsername: transcript.originalPosterUsername,
-            createdAt: transcript.createdAt,
-            lastActivity: transcript.endedAt || Date.now(),
-            messages: transcript.messages,
-            feedback: transcript.feedback || null
+            threadId: fullTranscript.threadId,
+            originalPosterUsername: fullTranscript.originalPosterUsername,
+            createdAt: fullTranscript.createdAt,
+            lastActivity: fullTranscript.endedAt || Date.now(),
+            messages: fullTranscript.messages,
+            feedback: fullTranscript.feedback || null
           };
 
           const html = this.bot.conversationManager.generateHTMLTranscript(conversationObj);
 
           if (html) {
             // Add HTML file to zip with sanitized filename
-            const filename = `transcript-${transcript.threadId}.html`;
+            const filename = `transcript-${fullTranscript.threadId}.html`;
             archive.append(html, { name: filename });
           }
         }

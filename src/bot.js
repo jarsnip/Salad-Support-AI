@@ -377,13 +377,18 @@ class SupportBot extends EventEmitter {
 
         console.log(`📊 Feedback received: ${feedbackType} from ${user.tag} in thread ${channel.id}`);
 
-        this.emit('feedbackReceived', {
+        const feedbackData = {
           threadId: channel.id,
           userId: user.id,
           username: user.tag,
           type: feedbackType,
           timestamp: Date.now()
-        });
+        };
+
+        this.emit('feedbackReceived', feedbackData);
+
+        // Store feedback in conversation before ending
+        this.conversationManager.setFeedback(channel.id, feedbackData);
 
         await channel.send(`Thank you for your feedback! ${feedbackType === 'positive' ? 'Glad we could help!' : 'A human agent will follow up with you shortly.'}`);
 
@@ -617,13 +622,18 @@ class SupportBot extends EventEmitter {
 
           console.log(`📊 Feedback received: ${feedbackType} from ${user.tag} in thread ${threadId}`);
 
-          this.emit('feedbackReceived', {
+          const feedbackData = {
             threadId: threadId,
             userId: user.id,
             username: user.tag,
             type: feedbackType,
             timestamp: Date.now()
-          });
+          };
+
+          this.emit('feedbackReceived', feedbackData);
+
+          // Store feedback in conversation before ending
+          this.conversationManager.setFeedback(threadId, feedbackData);
 
           await thread.send(`Thank you for your feedback! ${feedbackType === 'positive' ? 'Glad we could help!' : 'A human agent will follow up with you shortly.'}`);
 
@@ -832,13 +842,18 @@ class SupportBot extends EventEmitter {
 
         console.log(`📊 Feedback received: ${feedbackType} from ${user.tag} in thread ${threadId}`);
 
-        this.emit('feedbackReceived', {
+        const feedbackData = {
           threadId: threadId,
           userId: user.id,
           username: user.tag,
           type: feedbackType,
           timestamp: Date.now()
-        });
+        };
+
+        this.emit('feedbackReceived', feedbackData);
+
+        // Store feedback in conversation before ending
+        this.conversationManager.setFeedback(threadId, feedbackData);
 
         await thread.send(`Thank you for your feedback! ${feedbackType === 'positive' ? 'Glad we could help!' : 'A human agent will follow up with you shortly.'}`);
 

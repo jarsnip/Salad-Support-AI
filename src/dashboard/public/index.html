@@ -2479,13 +2479,15 @@
                         `).join('')}
                     </svg>
 
-                    <div style="display: flex; justify-content: space-between; padding: 0 5px; font-size: 10px; color: var(--muted-text);">
-                        ${points.map(p => `
-                            <div style="display: flex; flex-direction: column; align-items: center; min-width: 0;">
+                    <div style="position: relative; height: 35px; padding: 0 5px;">
+                        ${points.map(p => {
+                            const leftPercent = (p.x / width) * 100;
+                            return `
+                            <div style="position: absolute; left: ${leftPercent}%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; font-size: 10px; color: var(--muted-text);">
                                 <span style="font-weight: 600; color: ${p.overall < 0 ? 'var(--negative-color)' : 'var(--accent-color)'};">${p.overall >= 0 ? '+' : ''}${p.overall}</span>
-                                <span style="font-size: 9px;">${p.date}</span>
+                                <span style="font-size: 9px; white-space: nowrap;">${p.date}</span>
                             </div>
-                        `).join('')}
+                        `}).join('')}
                     </div>
                 </div>
             `;

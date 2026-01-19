@@ -76,7 +76,8 @@ class ConfigManager {
         options: [
           'claude-sonnet-4-20250514',
           'claude-opus-4-5-20251101',
-          'claude-3-5-sonnet-20241022'
+          'claude-3-5-sonnet-20241022',
+          'claude-3-5-haiku-20241022'
         ]
       },
 
@@ -111,20 +112,22 @@ class ConfigManager {
       SPAM_TIME_WINDOW: {
         type: 'number',
         category: 'Spam Filter',
-        description: 'Time window in milliseconds (10 minutes = 600000)',
+        description: 'Time window in minutes',
         required: false,
-        default: 600000,
-        min: 60000,
-        max: 3600000
+        default: 10,
+        min: 1,
+        max: 60,
+        unit: 'minutes'
       },
       SPAM_COOLDOWN: {
         type: 'number',
         category: 'Spam Filter',
-        description: 'Cooldown between threads in milliseconds (2 minutes = 120000)',
+        description: 'Cooldown between threads in minutes',
         required: false,
-        default: 120000,
+        default: 2,
         min: 0,
-        max: 600000
+        max: 10,
+        unit: 'minutes'
       },
       SPAM_AUTO_BAN_THRESHOLD: {
         type: 'number',
@@ -138,11 +141,12 @@ class ConfigManager {
       SPAM_BAN_DURATION: {
         type: 'number',
         category: 'Spam Filter',
-        description: 'Ban duration in milliseconds (1 hour = 3600000)',
+        description: 'Ban duration in minutes',
         required: false,
-        default: 3600000,
-        min: 60000,
-        max: 86400000
+        default: 60,
+        min: 1,
+        max: 1440,
+        unit: 'minutes'
       },
 
       // Conversation Auto-End Configuration
@@ -156,29 +160,32 @@ class ConfigManager {
       AUTO_END_TIMEOUT: {
         type: 'number',
         category: 'Auto-End',
-        description: 'Timeout for auto-ending in milliseconds (5 minutes = 300000)',
+        description: 'Timeout for auto-ending in minutes',
         required: false,
-        default: 300000,
-        min: 60000,
-        max: 3600000
+        default: 5,
+        min: 1,
+        max: 60,
+        unit: 'minutes'
       },
       THREAD_DELETE_AFTER_END: {
         type: 'number',
         category: 'Auto-End',
-        description: 'Delete thread after end in milliseconds (5 minutes = 300000)',
+        description: 'Delete thread after end in minutes',
         required: false,
-        default: 300000,
+        default: 5,
         min: 0,
-        max: 3600000
+        max: 60,
+        unit: 'minutes'
       },
       THREAD_DELETE_AFTER_FEEDBACK: {
         type: 'number',
         category: 'Auto-End',
-        description: 'Delete thread after feedback in milliseconds (2 minutes = 120000)',
+        description: 'Delete thread after feedback in minutes',
         required: false,
-        default: 120000,
+        default: 2,
         min: 0,
-        max: 3600000
+        max: 60,
+        unit: 'minutes'
       },
       SEND_TRANSCRIPTS: {
         type: 'boolean',
@@ -260,8 +267,14 @@ class ConfigManager {
         return rawValue.toLowerCase() === 'true';
 
       case 'number':
-        const num = parseInt(rawValue);
+        let num = parseInt(rawValue);
         if (isNaN(num)) return schema.default;
+
+        // Convert milliseconds to minutes for display
+        if (schema.unit === 'minutes') {
+          num = Math.round(num / 60000);
+        }
+
         return num;
 
       case 'string':
@@ -339,6 +352,20 @@ class ConfigManager {
         return { success: false, errors };
       }
 
+      // Convert values for storage (minutes -> milliseconds)
+      const storageUpdates = {};
+      for (const [key, value] of Object.entries(updates)) {
+        const schema = this.schema[key];
+        let storageValue = value;
+
+        // Convert minutes to milliseconds for storage
+        if (schema && schema.unit === 'minutes' && schema.type === 'number') {
+          storageValue = parseInt(value) * 60000;
+        }
+
+        storageUpdates[key] = storageValue;
+      }
+
       // Read current .env file
       let content = '';
       if (fs.existsSync(this.envPath)) {
@@ -367,9 +394,9 @@ class ConfigManager {
         if (match) {
           const key = match[1];
 
-          if (updates.hasOwnProperty(key)) {
-            // Update this line
-            updatedLines.push(`${key}=${updates[key]}`);
+          if (storageUpdates.hasOwnProperty(key)) {
+            // Update this line with converted value
+            updatedLines.push(`${key}=${storageUpdates[key]}`);
             processedKeys.add(key);
           } else {
             // Keep line as-is
@@ -382,7 +409,7 @@ class ConfigManager {
       }
 
       // Add new keys that weren't in the file
-      for (const [key, value] of Object.entries(updates)) {
+      for (const [key, value] of Object.entries(storageUpdates)) {
         if (!processedKeys.has(key)) {
           updatedLines.push(`${key}=${value}`);
         }

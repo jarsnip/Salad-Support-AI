@@ -1,5 +1,7 @@
 import { Client, GatewayIntentBits, ChannelType, PermissionFlagsBits } from 'discord.js';
 import { EventEmitter } from 'events';
+import fs from 'fs';
+import path from 'path';
 import AIService from './services/aiService.js';
 import ConversationManager from './utils/conversationManager.js';
 import MessageQueue from './utils/messageQueue.js';
@@ -159,6 +161,9 @@ class SupportBot extends EventEmitter {
       // Record thread creation in spam filter
       this.spamFilter.recordThread(message.author.id);
       this.spamFilter.recordMessage(message.author.id, message.content);
+
+      // Log initial message for doc refinement
+      this.logInitialMessage(message.content);
 
       await thread.send(`👋 Hi ${message.author}! I'm here to help with your support question. Let me look into that for you...`);
 
@@ -345,8 +350,12 @@ class SupportBot extends EventEmitter {
         return;
       }
 
+      // Get the original poster to ping them
+      const originalPosterId = this.conversationManager.getOriginalPosterId(channel.id);
+      const userMention = originalPosterId ? `<@${originalPosterId}>` : '';
+
       await interaction.reply({
-        content: '👋 Thank you for using our support! Please provide feedback by reacting to this message:\n👍 if your issue was resolved\n👎 if you need more help',
+        content: `${userMention} 👋 Thank you for using our support! Please provide feedback by reacting to this message:\n👍 if your issue was resolved\n👎 if you need more help`,
         fetchReply: true
       });
 
@@ -584,38 +593,114 @@ class SupportBot extends EventEmitter {
 
         console.log(`⏰ Auto-ending inactive conversation in thread ${threadId}`);
 
-        // End the conversation
-        this.conversationManager.endConversation(threadId);
+        // Get the original poster to ping them
+        const userMention = conversation.originalPosterId ? `<@${conversation.originalPosterId}>` : '';
 
-        // Emit conversation ended event for dashboard
-        this.emit('conversationEnded', {
-          threadId: threadId,
-          reason: 'auto-end',
-          timestamp: Date.now()
+        // Send feedback request message
+        const feedbackMessage = await thread.send(
+          `${userMention} ⏰ This conversation has been inactive. Please provide feedback by reacting to this message:\n👍 if your issue was resolved\n👎 if you need more help`
+        );
+
+        await feedbackMessage.react('👍');
+        await feedbackMessage.react('👎');
+
+        const filter = (reaction, user) => {
+          return ['👍', '👎'].includes(reaction.emoji.name) && !user.bot;
+        };
+
+        const collector = feedbackMessage.createReactionCollector({
+          filter,
+          time: 60000,
+          max: 1
         });
 
-        // Send transcript if enabled
-        if (this.config.autoEnd.sendTranscripts) {
-          await this.sendTranscriptDM(threadId, conversation.originalPosterId);
-        }
+        collector.on('collect', async (reaction, user) => {
+          const feedbackType = reaction.emoji.name === '👍' ? 'positive' : 'negative';
 
-        // Send message to thread
-        await thread.send('⏰ This conversation has been automatically closed due to inactivity. A transcript has been sent to your DMs.');
+          console.log(`📊 Feedback received: ${feedbackType} from ${user.tag} in thread ${threadId}`);
 
-        // Lock and archive thread
-        await thread.setLocked(true);
-        await thread.setArchived(true);
+          this.emit('feedbackReceived', {
+            threadId: threadId,
+            userId: user.id,
+            username: user.tag,
+            type: feedbackType,
+            timestamp: Date.now()
+          });
 
-        // Schedule thread deletion
-        const deleteTimeout = this.config.autoEnd.threadDeleteAfterEnd || 300000;
-        setTimeout(async () => {
-          try {
-            await thread.delete();
-            console.log(`🗑️  Thread ${threadId} deleted after auto-end`);
-          } catch (err) {
-            console.error(`Error deleting thread ${threadId}:`, err);
+          await thread.send(`Thank you for your feedback! ${feedbackType === 'positive' ? 'Glad we could help!' : 'A human agent will follow up with you shortly.'}`);
+
+          // Mark conversation as ended
+          this.conversationManager.endConversation(threadId);
+
+          // Emit conversation ended event for dashboard
+          this.emit('conversationEnded', {
+            threadId: threadId,
+            reason: 'auto-end',
+            timestamp: Date.now()
+          });
+
+          // Send transcript if enabled
+          if (this.config.autoEnd.sendTranscripts && conversation.originalPosterId) {
+            await this.sendTranscriptDM(threadId, conversation.originalPosterId);
           }
-        }, deleteTimeout);
+
+          // If negative feedback and follow-up channel configured, notify support team
+          if (feedbackType === 'negative' && this.config.negativeFeedbackChannelId) {
+            await this.sendNegativeFeedbackAlert(threadId, user);
+          }
+
+          await thread.setLocked(true);
+          await thread.setArchived(true);
+
+          console.log(`🔒 Thread ${threadId} has been locked and archived after auto-end`);
+
+          // Schedule thread deletion after feedback
+          const deleteTimeout = this.config.autoEnd.threadDeleteAfterFeedback || 120000; // Default 2 minutes
+          setTimeout(async () => {
+            try {
+              await thread.delete();
+              console.log(`🗑️  Thread ${threadId} deleted after auto-end feedback`);
+            } catch (err) {
+              console.error(`Error deleting thread ${threadId}:`, err);
+            }
+          }, deleteTimeout);
+        });
+
+        collector.on('end', async (collected) => {
+          if (collected.size === 0) {
+            // No feedback received, still end the conversation
+            await thread.send('No feedback received. This conversation has been closed due to inactivity.');
+
+            // Mark conversation as ended
+            this.conversationManager.endConversation(threadId);
+
+            // Emit conversation ended event for dashboard
+            this.emit('conversationEnded', {
+              threadId: threadId,
+              reason: 'auto-end-timeout',
+              timestamp: Date.now()
+            });
+
+            // Send transcript if enabled
+            if (this.config.autoEnd.sendTranscripts && conversation.originalPosterId) {
+              await this.sendTranscriptDM(threadId, conversation.originalPosterId);
+            }
+
+            await thread.setLocked(true);
+            await thread.setArchived(true);
+
+            // Schedule thread deletion
+            const deleteTimeout = this.config.autoEnd.threadDeleteAfterEnd || 300000;
+            setTimeout(async () => {
+              try {
+                await thread.delete();
+                console.log(`🗑️  Thread ${threadId} deleted after auto-end timeout`);
+              } catch (err) {
+                console.error(`Error deleting thread ${threadId}:`, err);
+              }
+            }, deleteTimeout);
+          }
+        });
 
       } catch (error) {
         console.error(`Error auto-ending conversation ${threadId}:`, error);
@@ -723,44 +808,110 @@ class SupportBot extends EventEmitter {
 
       console.log(`🛑 Ending conversation from dashboard: ${threadId}`);
 
-      // Mark conversation as ended
-      this.conversationManager.endConversation(threadId);
+      // Get the original poster to ping them
+      const userMention = conversation.originalPosterId ? `<@${conversation.originalPosterId}>` : '';
 
-      // Emit conversation ended event for dashboard
-      this.emit('conversationEnded', {
-        threadId: threadId,
-        reason: 'dashboard',
-        timestamp: Date.now()
+      // Send feedback request message
+      const feedbackMessage = await thread.send(
+        `${userMention} 👋 Thank you for using our support! Please provide feedback by reacting to this message:\n👍 if your issue was resolved\n👎 if you need more help`
+      );
+
+      await feedbackMessage.react('👍');
+      await feedbackMessage.react('👎');
+
+      const filter = (reaction, user) => {
+        return ['👍', '👎'].includes(reaction.emoji.name) && !user.bot;
+      };
+
+      const collector = feedbackMessage.createReactionCollector({
+        filter,
+        time: 60000,
+        max: 1
       });
 
-      // Send transcript if enabled
-      if (this.config.autoEnd?.sendTranscripts && conversation.originalPosterId) {
-        await this.sendTranscriptDM(threadId, conversation.originalPosterId);
-      }
+      collector.on('collect', async (reaction, user) => {
+        const feedbackType = reaction.emoji.name === '👍' ? 'positive' : 'negative';
 
-      // Send message to thread
-      await thread.send('🛑 This conversation has been closed by support staff. A transcript has been sent to your DMs. Thank you for reaching out!');
+        console.log(`📊 Feedback received: ${feedbackType} from ${user.tag} in thread ${threadId}`);
 
-      // Lock and archive thread
-      await thread.setLocked(true);
-      await thread.setArchived(true);
+        this.emit('feedbackReceived', {
+          threadId: threadId,
+          userId: user.id,
+          username: user.tag,
+          type: feedbackType,
+          timestamp: Date.now()
+        });
 
-      console.log(`🔒 Thread ${threadId} has been locked and archived from dashboard`);
+        await thread.send(`Thank you for your feedback! ${feedbackType === 'positive' ? 'Glad we could help!' : 'A human agent will follow up with you shortly.'}`);
 
-      // Schedule thread deletion
-      const deleteTimeout = this.config.autoEnd?.threadDeleteAfterEnd || 300000;
-      setTimeout(async () => {
-        try {
-          await thread.delete();
-          console.log(`🗑️  Thread ${threadId} deleted after dashboard end`);
-        } catch (err) {
-          console.error(`Error deleting thread ${threadId}:`, err);
+        // Mark conversation as ended
+        this.conversationManager.endConversation(threadId);
+
+        // Emit conversation ended event for dashboard
+        this.emit('conversationEnded', {
+          threadId: threadId,
+          reason: 'dashboard',
+          timestamp: Date.now()
+        });
+
+        // Send transcript if enabled
+        if (this.config.autoEnd?.sendTranscripts && conversation.originalPosterId) {
+          await this.sendTranscriptDM(threadId, conversation.originalPosterId);
         }
-      }, deleteTimeout);
+
+        // If negative feedback and follow-up channel configured, notify support team
+        if (feedbackType === 'negative' && this.config.negativeFeedbackChannelId) {
+          await this.sendNegativeFeedbackAlert(threadId, user);
+        }
+
+        await thread.setLocked(true);
+        await thread.setArchived(true);
+
+        console.log(`🔒 Thread ${threadId} has been locked and archived from dashboard`);
+
+        // Schedule thread deletion after feedback
+        const deleteTimeout = this.config.autoEnd?.threadDeleteAfterFeedback || 120000; // Default 2 minutes
+        setTimeout(async () => {
+          try {
+            await thread.delete();
+            console.log(`🗑️  Thread ${threadId} deleted after dashboard end`);
+          } catch (err) {
+            console.error(`Error deleting thread ${threadId}:`, err);
+          }
+        }, deleteTimeout);
+      });
+
+      collector.on('end', async (collected) => {
+        if (collected.size === 0) {
+          await thread.send('No feedback received. Thread will remain open.');
+        }
+      });
 
     } catch (error) {
       console.error(`Error ending conversation from dashboard ${threadId}:`, error);
       throw error; // Re-throw to be handled by the API endpoint
+    }
+  }
+
+  logInitialMessage(messageContent) {
+    try {
+      const logFile = path.join(process.cwd(), 'data', 'initial_messages.txt');
+      const logDir = path.dirname(logFile);
+
+      // Ensure data directory exists
+      if (!fs.existsSync(logDir)) {
+        fs.mkdirSync(logDir, { recursive: true });
+      }
+
+      // Format: timestamp | message content
+      const timestamp = new Date().toISOString();
+      const logEntry = `[${timestamp}] ${messageContent}\n`;
+
+      // Append to file
+      fs.appendFileSync(logFile, logEntry, 'utf8');
+    } catch (error) {
+      console.error('Error logging initial message:', error);
+      // Don't throw - logging failure shouldn't break the bot
     }
   }
 

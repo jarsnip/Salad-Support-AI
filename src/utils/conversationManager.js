@@ -1,7 +1,10 @@
+import TranscriptManager from './transcriptManager.js';
+
 class ConversationManager {
   constructor(maxHistory = 10) {
     this.conversations = new Map();
     this.maxHistory = maxHistory;
+    this.transcriptManager = new TranscriptManager();
   }
 
   getConversation(threadId) {
@@ -23,6 +26,12 @@ class ConversationManager {
 
   endConversation(threadId) {
     const conversation = this.getConversation(threadId);
+
+    // Save transcript before marking as ended
+    if (!conversation.ended && conversation.messages.length > 0) {
+      this.transcriptManager.saveTranscript(conversation);
+    }
+
     conversation.ended = true;
     conversation.lastActivity = Date.now();
   }
@@ -393,6 +402,31 @@ class ConversationManager {
     }
 
     return inactive;
+  }
+
+  // Transcript Manager Accessors
+  getTranscriptManager() {
+    return this.transcriptManager;
+  }
+
+  getTranscript(threadId) {
+    return this.transcriptManager.getTranscript(threadId);
+  }
+
+  listTranscripts(limit, offset) {
+    return this.transcriptManager.listTranscripts(limit, offset);
+  }
+
+  searchTranscripts(query, limit) {
+    return this.transcriptManager.searchTranscripts(query, limit);
+  }
+
+  deleteTranscript(threadId) {
+    return this.transcriptManager.deleteTranscript(threadId);
+  }
+
+  getTranscriptStats() {
+    return this.transcriptManager.getStats();
   }
 }
 

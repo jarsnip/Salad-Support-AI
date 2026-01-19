@@ -80,6 +80,34 @@ export class DashboardServer {
       res.json(this.bot.spamFilter.getBannedUsers());
     });
 
+    // API endpoint to unban a user
+    this.app.delete('/api/banned/:userId', (req, res) => {
+      try {
+        const { userId } = req.params;
+
+        if (!userId) {
+          return res.status(400).send('userId is required');
+        }
+
+        const wasUnbanned = this.bot.spamFilter.unbanUser(userId);
+
+        if (wasUnbanned) {
+          // Broadcast update to all connected clients
+          this.broadcast({
+            type: 'bannedUpdated',
+            data: { action: 'unbanned', userId }
+          });
+
+          res.json({ success: true, message: 'User unbanned successfully' });
+        } else {
+          res.status(404).send('User not found in banned list');
+        }
+      } catch (error) {
+        console.error('Error unbanning user:', error);
+        res.status(500).send('Internal server error');
+      }
+    });
+
     // API endpoint to get blacklisted users
     this.app.get('/api/blacklist', (req, res) => {
       res.json(this.bot.spamFilter.getBlacklist());
@@ -149,6 +177,128 @@ export class DashboardServer {
       } catch (error) {
         console.error('Error ending conversation:', error);
         res.status(500).send(error.message || 'Internal server error');
+      }
+    });
+
+    // API endpoint to list transcripts
+    this.app.get('/api/transcripts', (req, res) => {
+      try {
+        const limit = parseInt(req.query.limit) || 20;
+        const offset = parseInt(req.query.offset) || 0;
+        const query = req.query.search;
+
+        let result;
+        if (query) {
+          const transcripts = this.bot.conversationManager.searchTranscripts(query, limit);
+          result = {
+            transcripts,
+            total: transcripts.length,
+            limit,
+            offset: 0,
+            hasMore: false
+          };
+        } else {
+          result = this.bot.conversationManager.listTranscripts(limit, offset);
+        }
+
+        res.json(result);
+      } catch (error) {
+        console.error('Error listing transcripts:', error);
+        res.status(500).send('Internal server error');
+      }
+    });
+
+    // API endpoint to get a specific transcript
+    this.app.get('/api/transcripts/:threadId', (req, res) => {
+      try {
+        const { threadId } = req.params;
+
+        if (!threadId) {
+          return res.status(400).send('threadId is required');
+        }
+
+        const transcript = this.bot.conversationManager.getTranscript(threadId);
+
+        if (!transcript) {
+          return res.status(404).send('Transcript not found');
+        }
+
+        res.json(transcript);
+      } catch (error) {
+        console.error('Error getting transcript:', error);
+        res.status(500).send('Internal server error');
+      }
+    });
+
+    // API endpoint to download transcript as HTML
+    this.app.get('/api/transcripts/:threadId/download', (req, res) => {
+      try {
+        const { threadId } = req.params;
+
+        if (!threadId) {
+          return res.status(400).send('threadId is required');
+        }
+
+        const transcript = this.bot.conversationManager.getTranscript(threadId);
+
+        if (!transcript) {
+          return res.status(404).send('Transcript not found');
+        }
+
+        // Generate HTML using existing generateHTMLTranscript method
+        // We need to reconstruct a conversation object for the method
+        const conversationObj = {
+          threadId: transcript.threadId,
+          originalPosterUsername: transcript.originalPosterUsername,
+          createdAt: transcript.createdAt,
+          messages: transcript.messages
+        };
+
+        const html = this.bot.conversationManager.generateHTMLTranscript(conversationObj);
+
+        if (!html) {
+          return res.status(500).send('Error generating HTML transcript');
+        }
+
+        res.setHeader('Content-Type', 'text/html');
+        res.setHeader('Content-Disposition', `attachment; filename="transcript-${threadId}.html"`);
+        res.send(html);
+      } catch (error) {
+        console.error('Error downloading transcript:', error);
+        res.status(500).send('Internal server error');
+      }
+    });
+
+    // API endpoint to delete a transcript
+    this.app.delete('/api/transcripts/:threadId', (req, res) => {
+      try {
+        const { threadId } = req.params;
+
+        if (!threadId) {
+          return res.status(400).send('threadId is required');
+        }
+
+        const success = this.bot.conversationManager.deleteTranscript(threadId);
+
+        if (!success) {
+          return res.status(404).send('Transcript not found');
+        }
+
+        res.json({ success: true, message: 'Transcript deleted successfully' });
+      } catch (error) {
+        console.error('Error deleting transcript:', error);
+        res.status(500).send('Internal server error');
+      }
+    });
+
+    // API endpoint to get transcript stats
+    this.app.get('/api/transcripts/stats', (req, res) => {
+      try {
+        const stats = this.bot.conversationManager.getTranscriptStats();
+        res.json(stats);
+      } catch (error) {
+        console.error('Error getting transcript stats:', error);
+        res.status(500).send('Internal server error');
       }
     });
   }

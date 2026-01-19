@@ -80,6 +80,34 @@ export class DashboardServer {
       res.json(this.bot.spamFilter.getBannedUsers());
     });
 
+    // API endpoint to unban a user
+    this.app.delete('/api/banned/:userId', (req, res) => {
+      try {
+        const { userId } = req.params;
+
+        if (!userId) {
+          return res.status(400).send('userId is required');
+        }
+
+        const wasUnbanned = this.bot.spamFilter.unbanUser(userId);
+
+        if (wasUnbanned) {
+          // Broadcast update to all connected clients
+          this.broadcast({
+            type: 'bannedUpdated',
+            data: { action: 'unbanned', userId }
+          });
+
+          res.json({ success: true, message: 'User unbanned successfully' });
+        } else {
+          res.status(404).send('User not found in banned list');
+        }
+      } catch (error) {
+        console.error('Error unbanning user:', error);
+        res.status(500).send('Internal server error');
+      }
+    });
+
     // API endpoint to get blacklisted users
     this.app.get('/api/blacklist', (req, res) => {
       res.json(this.bot.spamFilter.getBlacklist());

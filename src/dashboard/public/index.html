@@ -503,6 +503,48 @@
             margin-top: 8px;
         }
 
+        .banned-item {
+            background: var(--card-bg);
+            border-left: 4px solid #ff9800;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+        }
+
+        .banned-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .banned-username {
+            font-weight: bold;
+            color: #ff9800;
+            font-size: 1.1em;
+        }
+
+        .banned-timer {
+            background: #ff9800;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+
+        .banned-info {
+            margin-top: 8px;
+            font-size: 0.9em;
+            color: var(--muted-text);
+        }
+
+        .banned-reason {
+            margin-top: 5px;
+            font-style: italic;
+            color: #ff9800;
+        }
+
         .blacklist-item {
             background: var(--blacklist-bg);
             border-left: 4px solid var(--button-danger-bg);
@@ -856,6 +898,13 @@
         </div>
 
         <div class="panel">
+            <h2>⏱️ Temporary Bans</h2>
+            <div id="banned">
+                <div class="empty-state">No temporarily banned users</div>
+            </div>
+        </div>
+
+        <div class="panel">
             <h2>🔨 Blacklist Management</h2>
             <div class="blacklist-form">
                 <div class="form-group">
@@ -895,6 +944,7 @@
         const errorsDiv = document.getElementById('errors');
         const feedbackDiv = document.getElementById('feedback');
         const spamDiv = document.getElementById('spam');
+        const bannedDiv = document.getElementById('banned');
         const blacklistDiv = document.getElementById('blacklist');
         const autoScrollToggle = document.getElementById('autoScrollToggle');
 
@@ -940,6 +990,7 @@
                     updateErrors(message.data.errors);
                     updateFeedback(message.data.feedback);
                     updateSpam(message.data.spam);
+                    updateBanned(message.data.banned);
                     updateBlacklist(message.data.blacklist);
                     fetchFeedbackGraph();
                     break;
@@ -963,6 +1014,7 @@
                 case 'spamDetected':
                     fetchSpam();
                     fetchStats();
+                    fetchBanned();
                     fetchBlacklist();
                     break;
             }
@@ -1131,6 +1183,62 @@
             }
         }
 
+        function updateBanned(banned) {
+            if (!banned || banned.length === 0) {
+                bannedDiv.innerHTML = '<div class="empty-state">No temporarily banned users</div>';
+                return;
+            }
+
+            bannedDiv.innerHTML = banned.map(ban => {
+                const remainingSeconds = Math.ceil(ban.remainingMs / 1000);
+                const remainingMinutes = Math.ceil(remainingSeconds / 60);
+                const timeDisplay = remainingMinutes > 1 ? `${remainingMinutes}m remaining` : `${remainingSeconds}s remaining`;
+
+                return `
+                    <div class="banned-item" data-user-id="${ban.userId}">
+                        <div class="banned-header">
+                            <span class="banned-username">⏱️ ${escapeHtml(ban.username)}</span>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <span class="banned-timer" id="timer-${ban.userId}">${timeDisplay}</span>
+                                <button class="btn-primary" onclick="unbanUser('${ban.userId}')">Unban Now</button>
+                            </div>
+                        </div>
+                        <div class="banned-info">
+                            <div style="color: #a0a0a0; font-size: 0.85em;">
+                                User ID: ${ban.userId}<br>
+                                Banned until: ${new Date(ban.until).toLocaleString()}
+                            </div>
+                            <div class="banned-reason">Reason: ${escapeHtml(ban.reason)}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Start countdown timers
+            banned.forEach(ban => {
+                startBanTimer(ban.userId, ban.remainingMs);
+            });
+        }
+
+        function startBanTimer(userId, remainingMs) {
+            const timerElement = document.getElementById(`timer-${userId}`);
+            if (!timerElement) return;
+
+            let remaining = remainingMs;
+            const interval = setInterval(() => {
+                remaining -= 1000;
+                if (remaining <= 0) {
+                    clearInterval(interval);
+                    fetchBanned();
+                    return;
+                }
+
+                const remainingSeconds = Math.ceil(remaining / 1000);
+                const remainingMinutes = Math.ceil(remainingSeconds / 60);
+                timerElement.textContent = remainingMinutes > 1 ? `${remainingMinutes}m remaining` : `${remainingSeconds}s remaining`;
+            }, 1000);
+        }
+
         function updateBlacklist(blacklist) {
             if (!blacklist || blacklist.length === 0) {
                 blacklistDiv.innerHTML = '<div class="empty-state">No blacklisted users</div>';
@@ -1253,6 +1361,35 @@
             const response = await fetch('/api/blacklist');
             const blacklist = await response.json();
             updateBlacklist(blacklist);
+        }
+
+        async function fetchBanned() {
+            const response = await fetch('/api/banned');
+            const banned = await response.json();
+            updateBanned(banned);
+        }
+
+        async function unbanUser(userId) {
+            if (!confirm(`Are you sure you want to unban user ${userId}?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/banned/${userId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    fetchBanned();
+                    fetchStats();
+                } else {
+                    const error = await response.text();
+                    alert('Failed to unban user: ' + error);
+                }
+            } catch (error) {
+                console.error('Error unbanning user:', error);
+                alert('Failed to unban user');
+            }
         }
 
         function formatTime(timestamp) {

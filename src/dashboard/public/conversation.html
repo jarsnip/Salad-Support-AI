@@ -26,6 +26,7 @@
             --button-primary-text: #1a1a2e;
             --button-danger-bg: #ef4444;
             --muted-text: #6c757d;
+            --code-bg: #e9ecef;
         }
 
         [data-theme="dark"] {
@@ -46,6 +47,7 @@
             --button-primary-text: #1a1a2e;
             --button-danger-bg: #ef4444;
             --muted-text: #a0a0a0;
+            --code-bg: #2a2f45;
         }
 
         * {
@@ -182,7 +184,36 @@
         .message-content {
             color: var(--text-color);
             line-height: 1.6;
-            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .message-content strong {
+            font-weight: 700;
+            color: var(--text-color);
+        }
+
+        .message-content em {
+            font-style: italic;
+            color: var(--text-color);
+        }
+
+        .message-content code {
+            background: var(--code-bg);
+            color: var(--accent-color);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+        }
+
+        .message-content a {
+            color: var(--accent-color);
+            text-decoration: underline;
+            transition: opacity 0.2s;
+        }
+
+        .message-content a:hover {
+            opacity: 0.8;
         }
 
         .empty-state {
@@ -364,7 +395,7 @@
                         <span class="message-role">${msg.role === 'user' ? 'User' : 'Assistant'}</span>
                         <span class="message-timestamp">${formatTime(msg.timestamp)}</span>
                     </div>
-                    <div class="message-content">${escapeHtml(msg.content)}</div>
+                    <div class="message-content">${formatDiscordMarkdown(msg.content)}</div>
                 </div>
             `).join('');
 
@@ -410,6 +441,31 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        function formatDiscordMarkdown(text) {
+            if (!text) return '';
+
+            // First escape HTML
+            let formatted = escapeHtml(text);
+
+            // Convert Discord markdown to HTML
+            // Bold: **text** -> <strong>text</strong>
+            formatted = formatted.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+
+            // Italic: *text* -> <em>text</em> (but not if it's part of **)
+            formatted = formatted.replace(/(?<!\*)\*(?!\*)(.+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
+
+            // Code: `text` -> <code>text</code>
+            formatted = formatted.replace(/`(.+?)`/g, '<code>$1</code>');
+
+            // URLs in angle brackets: <https://url> -> clickable link
+            formatted = formatted.replace(/&lt;(https?:\/\/[^&]+)&gt;/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+
+            // Convert line breaks to <br>
+            formatted = formatted.replace(/\n/g, '<br>');
+
+            return formatted;
         }
 
         // Theme toggle functionality

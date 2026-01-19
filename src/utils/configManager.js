@@ -76,8 +76,7 @@ class ConfigManager {
         options: [
           'claude-sonnet-4-20250514',
           'claude-opus-4-5-20251101',
-          'claude-3-5-sonnet-20241022',
-          'claude-3-5-haiku-20241022'
+          'claude-3-5-sonnet-20241022'
         ]
       },
 

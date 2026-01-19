@@ -1,0 +1,1661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Salad Support AI - Live Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-gradient-start: #f8f9fa;
+            --bg-gradient-end: #e9ecef;
+            --text-color: #333;
+            --panel-bg: white;
+            --panel-border: #dee2e6;
+            --card-bg: #f8f9fa;
+            --stat-value-color: #90FF75;
+            --accent-color: #90FF75;
+            --accent-hover: #7ce65e;
+            --heading-color: #90FF75;
+            --border-color: #dee2e6;
+            --message-user-border: #90FF75;
+            --message-assistant-border: #667eea;
+            --message-assistant-bg: #f0f4ff;
+            --error-bg: #ffe6e6;
+            --error-border: #ff6b6b;
+            --spam-bg: #ffe6e6;
+            --blacklist-bg: #ffe6e6;
+            --button-primary-bg: #90FF75;
+            --button-primary-text: #1a1a2e;
+            --button-danger-bg: #ef4444;
+            --muted-text: #6c757d;
+            --status-online: #28a745;
+            --status-offline: #dc3545;
+            --positive-color: #90FF75;
+            --negative-color: #f87171;
+        }
+
+        [data-theme="dark"] {
+            --bg-gradient-start: #1a1a2e;
+            --bg-gradient-end: #16213e;
+            --text-color: #e0e0e0;
+            --panel-bg: #252b48;
+            --panel-border: #3a4266;
+            --card-bg: #1e2438;
+            --stat-value-color: #90FF75;
+            --accent-color: #90FF75;
+            --accent-hover: #7ce65e;
+            --heading-color: #90FF75;
+            --border-color: #3a4266;
+            --message-user-border: #90FF75;
+            --message-assistant-border: #667eea;
+            --message-assistant-bg: #252538;
+            --error-bg: #3d2020;
+            --error-border: #ff6b6b;
+            --spam-bg: #3d2020;
+            --blacklist-bg: #3d2020;
+            --button-primary-bg: #90FF75;
+            --button-primary-text: #1a1a2e;
+            --button-danger-bg: #ef4444;
+            --muted-text: #a0a0a0;
+            --status-online: #28a745;
+            --status-offline: #dc3545;
+            --positive-color: #90FF75;
+            --negative-color: #f87171;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        body {
+            font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            color: var(--text-color);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: var(--heading-color);
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 1.5em;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(144, 255, 117, 0.3);
+            z-index: 1000;
+        }
+
+        .theme-toggle:hover {
+            background: var(--accent-hover);
+            transform: scale(1.1);
+        }
+
+        .stats-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 30px;
+            justify-content: center;
+        }
+
+        .stats-grid .stat-card {
+            flex: 0 1 auto;
+            min-width: 150px;
+        }
+
+        .stat-card {
+            background: var(--panel-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            text-align: center;
+            transition: transform 0.2s, background-color 0.3s ease, border-color 0.3s ease;
+            border: 1px solid var(--panel-border);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: var(--stat-value-color);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: var(--muted-text);
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .panel {
+            background: var(--panel-bg);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            border: 1px solid var(--panel-border);
+            margin-bottom: 25px;
+        }
+
+        .panel h2 {
+            color: var(--heading-color);
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .conversation-item {
+            background: var(--card-bg);
+            border-left: 4px solid var(--accent-color);
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .conversation-item:hover {
+            background: var(--panel-bg);
+            transform: translateX(5px);
+        }
+
+        .conversation-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.8em;
+            font-weight: 600;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-view {
+            background: var(--accent-color);
+            color: var(--button-primary-text);
+        }
+
+        .btn-view:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-link {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-link:hover {
+            background: #5568d3;
+        }
+
+        .btn-end {
+            background: var(--button-danger-bg);
+            color: white;
+        }
+
+        .btn-end:hover {
+            background: #dc2626;
+        }
+
+        .conversation-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .thread-id {
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            color: var(--accent-color);
+            font-weight: bold;
+        }
+
+        .message-count {
+            background: var(--accent-color);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+
+        .conversation-time {
+            color: var(--muted-text);
+            font-size: 0.85em;
+        }
+
+        .message-item {
+            background: var(--card-bg);
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 6px;
+            border-left: 3px solid var(--border-color);
+        }
+
+        .message-item.user {
+            border-left-color: var(--message-user-border);
+        }
+
+        .message-item.assistant {
+            border-left-color: var(--message-assistant-border);
+            background: var(--message-assistant-bg);
+        }
+
+        .message-role {
+            font-weight: bold;
+            font-size: 0.85em;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .message-item.user .message-role {
+            color: var(--message-user-border);
+        }
+
+        .message-item.assistant .message-role {
+            color: var(--message-assistant-border);
+        }
+
+        .message-content {
+            color: var(--text-color);
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+
+        .error-item {
+            background: var(--error-bg);
+            border-left: 4px solid var(--error-border);
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            position: relative;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        .error-item:hover .close-btn {
+            opacity: 1;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: #ff6b6b;
+            color: white;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
+            opacity: 0.7;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .close-btn:hover {
+            background: #ff5252;
+            transform: scale(1.1);
+            opacity: 1;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .panel-header h2 {
+            margin-bottom: 0;
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .clear-all-btn {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .clear-all-btn:hover {
+            background: #ff5252;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .clear-all-btn:active {
+            transform: translateY(0);
+        }
+
+        .error-time {
+            color: var(--muted-text);
+            font-size: 0.85em;
+            margin-bottom: 5px;
+        }
+
+        .error-message {
+            color: var(--error-border);
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .error-stack {
+            font-family: 'Courier New', monospace;
+            font-size: 0.75em;
+            color: var(--text-color);
+            max-height: 100px;
+            overflow-y: auto;
+            background: var(--card-bg);
+            padding: 8px;
+            border-radius: 4px;
+        }
+
+        .feedback-summary {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 30px;
+            gap: 40px;
+        }
+
+        .feedback-stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .feedback-emoji {
+            font-size: 3em;
+            line-height: 1;
+        }
+
+        .feedback-count {
+            font-size: 2em;
+            font-weight: bold;
+            color: var(--accent-color);
+        }
+
+        .feedback-label {
+            font-size: 0.9em;
+            color: var(--muted-text);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .feedback-stat.positive .feedback-count {
+            color: var(--positive-color);
+        }
+
+        .feedback-stat.negative .feedback-count {
+            color: var(--negative-color);
+        }
+
+        .spam-item {
+            background: var(--spam-bg);
+            border-left: 4px solid var(--error-border);
+            padding: 18px;
+            margin-bottom: 18px;
+            border-radius: 8px;
+            position: relative;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        .spam-item:hover {
+            background: var(--error-bg);
+            transform: translateX(3px);
+        }
+
+        .spam-item:hover .close-btn {
+            opacity: 1;
+        }
+
+        .spam-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .spam-username {
+            font-weight: bold;
+            color: var(--error-border);
+            font-size: 1.05em;
+        }
+
+        .spam-reason {
+            background: var(--error-border);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .spam-time {
+            color: var(--muted-text);
+            font-size: 0.85em;
+            margin-bottom: 8px;
+        }
+
+        .spam-message {
+            font-size: 0.9em;
+            color: var(--text-color);
+            font-style: italic;
+            margin-top: 8px;
+        }
+
+        .banned-item {
+            background: var(--card-bg);
+            border-left: 4px solid #ff9800;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+        }
+
+        .banned-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .banned-username {
+            font-weight: bold;
+            color: #ff9800;
+            font-size: 1.1em;
+        }
+
+        .banned-timer {
+            background: #ff9800;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+
+        .banned-info {
+            margin-top: 8px;
+            font-size: 0.9em;
+            color: var(--muted-text);
+        }
+
+        .banned-reason {
+            margin-top: 5px;
+            font-style: italic;
+            color: #ff9800;
+        }
+
+        .blacklist-item {
+            background: var(--blacklist-bg);
+            border-left: 4px solid var(--button-danger-bg);
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+        }
+
+        .blacklist-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .blacklist-username {
+            font-weight: bold;
+            color: var(--error-border);
+            font-size: 1.1em;
+        }
+
+        .blacklist-badge {
+            background: var(--button-danger-bg);
+            color: white;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
+        .blacklist-info {
+            margin-top: 8px;
+            font-size: 0.9em;
+            color: var(--muted-text);
+        }
+
+        .blacklist-reason {
+            margin-top: 5px;
+            font-style: italic;
+            color: var(--error-border);
+        }
+
+        .blacklist-form {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            color: var(--muted-text);
+            font-size: 0.9em;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .form-group input {
+            width: 100%;
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 0.95em;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        .btn-primary {
+            background: var(--button-primary-bg);
+            color: var(--button-primary-text);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: var(--button-danger-bg);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+            transform: scale(1.05);
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--status-online);
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.disconnected {
+            background: var(--status-offline);
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .connection-status {
+            text-align: center;
+            color: var(--text-color);
+            margin-bottom: 20px;
+            font-size: 0.9em;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--muted-text);
+            padding: 40px;
+            font-style: italic;
+        }
+
+        .auto-scroll-toggle {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(144, 255, 117, 0.4);
+            transition: all 0.2s;
+        }
+
+        .auto-scroll-toggle:hover {
+            background: var(--accent-hover);
+            transform: scale(1.05);
+            box-shadow: 0 6px 16px rgba(144, 255, 117, 0.5);
+        }
+
+        .auto-scroll-toggle.disabled {
+            background: #4b5563;
+            color: #9ca3af;
+        }
+
+        .show-more-btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-top: 10px;
+            width: 100%;
+            transition: all 0.2s;
+        }
+
+        .show-more-btn:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+        }
+
+        .feedback-graph {
+            position: relative;
+            height: 240px;
+            padding: 20px;
+        }
+
+        .feedback-graph svg {
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
+
+        .graph-line {
+            fill: none;
+            stroke: var(--accent-color);
+            stroke-width: 3;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        .graph-point {
+            fill: var(--accent-color);
+            stroke: var(--card-bg);
+            stroke-width: 2;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .graph-point:hover {
+            r: 6;
+            stroke-width: 3;
+        }
+
+        .graph-point.negative {
+            fill: var(--negative-color);
+        }
+
+        .graph-label {
+            font-size: 11px;
+            fill: var(--muted-text);
+            text-anchor: middle;
+        }
+
+        .graph-value {
+            font-size: 10px;
+            font-weight: bold;
+            fill: var(--text-color);
+            text-anchor: middle;
+        }
+
+        .graph-grid-line {
+            stroke: var(--border-color);
+            stroke-width: 1;
+            stroke-dasharray: 3,3;
+            opacity: 0.3;
+        }
+
+        .graph-axis {
+            stroke: var(--border-color);
+            stroke-width: 1;
+        }
+
+        .zero-line {
+            stroke: var(--muted-text);
+            stroke-width: 1.5;
+            stroke-dasharray: 5,5;
+            opacity: 0.5;
+        }
+
+        @media (max-width: 768px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .feedback-graph {
+                height: 200px;
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌓</button>
+
+    <div class="container">
+        <h1>🥗 Salad Support AI - Live Dashboard</h1>
+
+        <div class="connection-status">
+            <span class="status-indicator" id="statusIndicator"></span>
+            <span id="statusText">Connecting...</span>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-value" id="activeConversations">0</div>
+                <div class="stat-label">Active Conversations</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="totalMessages">0</div>
+                <div class="stat-label">Total Messages</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="spamCount">0</div>
+                <div class="stat-label">Spam Blocked</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="bannedCount">0</div>
+                <div class="stat-label">Temp Banned</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="blacklistCount">0</div>
+                <div class="stat-label">Blacklisted</div>
+            </div>
+        </div>
+
+        <div class="content-grid">
+            <div class="panel">
+                <h2>💬 Live Conversations</h2>
+                <div id="conversations">
+                    <div class="empty-state">No active conversations</div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <h2>⚠️ Recent Errors</h2>
+                    <button class="clear-all-btn" onclick="clearAllErrors()">Clear All</button>
+                </div>
+                <div id="errors">
+                    <div class="empty-state">No errors</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>👍 Feedback Summary</h2>
+            <div id="feedback">
+                <div class="empty-state">No feedback yet</div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>📊 Feedback Over Time (Last 10 Days)</h2>
+            <div id="feedbackGraph">
+                <div class="empty-state">Loading feedback data...</div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <h2>🚫 Spam Detection</h2>
+                <button class="clear-all-btn" onclick="clearAllSpam()">Clear All</button>
+            </div>
+            <div id="spam">
+                <div class="empty-state">No spam detected</div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>⏱️ Temporary Bans</h2>
+            <div id="banned">
+                <div class="empty-state">No temporarily banned users</div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <h2>🔨 Blacklist Management</h2>
+            <div class="blacklist-form">
+                <div class="form-group">
+                    <label for="blacklistUserId">User ID</label>
+                    <input type="text" id="blacklistUserId" placeholder="Enter Discord user ID">
+                </div>
+                <div class="form-group">
+                    <label for="blacklistUsername">Username (optional)</label>
+                    <input type="text" id="blacklistUsername" placeholder="Enter username">
+                </div>
+                <div class="form-group">
+                    <label for="blacklistReason">Reason</label>
+                    <input type="text" id="blacklistReason" placeholder="Enter reason for blacklist">
+                </div>
+                <button class="btn-primary" onclick="addBlacklist()">Blacklist User</button>
+            </div>
+            <div id="blacklist">
+                <div class="empty-state">No blacklisted users</div>
+            </div>
+        </div>
+    </div>
+
+    <button class="auto-scroll-toggle" id="autoScrollToggle">Auto-scroll: ON</button>
+
+    <script>
+        let ws;
+        let autoScroll = true;
+        let reconnectTimeout;
+        let showAllErrors = false;
+        let showAllSpam = false;
+        let guildId = null;
+        const autoClearTimers = new Map(); // timestamp -> timeoutId
+
+        const statusIndicator = document.getElementById('statusIndicator');
+        const statusText = document.getElementById('statusText');
+        const conversationsDiv = document.getElementById('conversations');
+        const errorsDiv = document.getElementById('errors');
+        const feedbackDiv = document.getElementById('feedback');
+        const spamDiv = document.getElementById('spam');
+        const bannedDiv = document.getElementById('banned');
+        const blacklistDiv = document.getElementById('blacklist');
+        const autoScrollToggle = document.getElementById('autoScrollToggle');
+
+        function connect() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${protocol}//${window.location.host}`);
+
+            ws.onopen = () => {
+                console.log('Connected to dashboard');
+                statusIndicator.classList.remove('disconnected');
+                statusText.textContent = 'Connected';
+                if (reconnectTimeout) {
+                    clearTimeout(reconnectTimeout);
+                    reconnectTimeout = null;
+                }
+            };
+
+            ws.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                handleMessage(message);
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+
+            ws.onclose = () => {
+                console.log('Disconnected from dashboard');
+                statusIndicator.classList.add('disconnected');
+                statusText.textContent = 'Disconnected - Reconnecting...';
+                reconnectTimeout = setTimeout(connect, 3000);
+            };
+        }
+
+        function handleMessage(message) {
+            switch (message.type) {
+                case 'init':
+                    if (message.data.guildId) {
+                        guildId = message.data.guildId;
+                    }
+                    updateStats(message.data.stats);
+                    updateConversations(message.data.conversations);
+                    updateErrors(message.data.errors);
+                    updateFeedback(message.data.feedback);
+                    updateSpam(message.data.spam);
+                    updateBanned(message.data.banned);
+                    updateBlacklist(message.data.blacklist);
+                    fetchFeedbackGraph();
+                    break;
+                case 'messageProcessed':
+                case 'conversationCreated':
+                    fetchConversations();
+                    fetchStats();
+                    break;
+                case 'conversationEnded':
+                    fetchConversations();
+                    fetchStats();
+                    break;
+                case 'error':
+                    fetchErrors();
+                    fetchStats();
+                    break;
+                case 'feedbackReceived':
+                    fetchFeedback();
+                    fetchStats();
+                    break;
+                case 'spamDetected':
+                    fetchSpam();
+                    fetchStats();
+                    fetchBanned();
+                    fetchBlacklist();
+                    break;
+            }
+        }
+
+        function updateStats(stats) {
+            document.getElementById('activeConversations').textContent = stats.activeConversations || 0;
+            document.getElementById('totalMessages').textContent = stats.totalMessages || 0;
+            document.getElementById('spamCount').textContent = stats.spam || 0;
+            document.getElementById('bannedCount').textContent = stats.banned || 0;
+            document.getElementById('blacklistCount').textContent = stats.blacklisted || 0;
+        }
+
+        function updateConversations(conversations) {
+            // Filter out ended conversations
+            const activeConversations = conversations ? conversations.filter(conv => !conv.ended) : [];
+
+            if (!activeConversations || activeConversations.length === 0) {
+                conversationsDiv.innerHTML = '<div class="empty-state">No active conversations</div>';
+                return;
+            }
+
+            conversationsDiv.innerHTML = activeConversations.map(conv => {
+                const discordLink = guildId ? `https://discord.com/channels/${guildId}/${conv.threadId}` : null;
+                return `
+                    <div class="conversation-item">
+                        <div class="conversation-header">
+                            <span class="thread-id">Thread: ${conv.threadId}</span>
+                            <span class="message-count">${conv.messageCount} messages</span>
+                        </div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px;">
+                            <div style="color: #8b9eff; font-weight: 500; font-size: 0.9em;">
+                                👤 ${escapeHtml(conv.originalPoster)}
+                            </div>
+                            <div class="conversation-time">
+                                ${formatTime(conv.lastActivity)}
+                            </div>
+                        </div>
+                        <div class="conversation-actions">
+                            <a href="/conversation.html?threadId=${conv.threadId}${guildId ? '&guildId=' + guildId : ''}"
+                               target="_blank" class="btn-small btn-view">
+                                👁️ View Live
+                            </a>
+                            ${discordLink ? `<a href="${discordLink}" target="_blank" class="btn-small btn-link">🔗 Discord</a>` : ''}
+                            <button class="btn-small btn-end" onclick="endConversation('${conv.threadId}')">
+                                ⏹️ End
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateErrors(errors) {
+            if (!errors || errors.length === 0) {
+                errorsDiv.innerHTML = '<div class="empty-state">No errors</div>';
+                return;
+            }
+
+            const recentErrors = errors.slice(-10).reverse();
+            const displayErrors = showAllErrors ? recentErrors : recentErrors.slice(0, 3);
+
+            errorsDiv.innerHTML = displayErrors.map(error => {
+                // Schedule auto-clear after 3 minutes
+                scheduleAutoClear(error.timestamp, 'error');
+
+                return `
+                    <div class="error-item" data-timestamp="${error.timestamp}">
+                        <button class="close-btn" onclick="removeError(${error.timestamp})" title="Remove this error">×</button>
+                        <div class="error-time">${formatTime(error.timestamp)}</div>
+                        <div class="error-message">${escapeHtml(error.message)}</div>
+                        ${error.stack ? `<div class="error-stack">${escapeHtml(error.stack.substring(0, 300))}</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            // Add "Show More" button if there are more than 3 errors
+            if (recentErrors.length > 3 && !showAllErrors) {
+                errorsDiv.innerHTML += `
+                    <button class="show-more-btn" onclick="toggleShowAllErrors()">
+                        Show ${recentErrors.length - 3} More
+                    </button>
+                `;
+            } else if (showAllErrors && recentErrors.length > 3) {
+                errorsDiv.innerHTML += `
+                    <button class="show-more-btn" onclick="toggleShowAllErrors()">
+                        Show Less
+                    </button>
+                `;
+            }
+
+            if (autoScroll) {
+                errorsDiv.scrollTop = errorsDiv.scrollHeight;
+            }
+        }
+
+        function updateFeedback(feedback) {
+            if (!feedback || feedback.length === 0) {
+                feedbackDiv.innerHTML = '<div class="empty-state">No feedback yet</div>';
+                return;
+            }
+
+            // Calculate aggregated counts
+            const positiveCount = feedback.filter(fb => fb.type === 'positive').length;
+            const negativeCount = feedback.filter(fb => fb.type === 'negative').length;
+
+            feedbackDiv.innerHTML = `
+                <div class="feedback-summary">
+                    <div class="feedback-stat positive">
+                        <div class="feedback-emoji">👍</div>
+                        <div class="feedback-count">${positiveCount}</div>
+                        <div class="feedback-label">Positive</div>
+                    </div>
+                    <div class="feedback-stat negative">
+                        <div class="feedback-emoji">👎</div>
+                        <div class="feedback-count">${negativeCount}</div>
+                        <div class="feedback-label">Negative</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateSpam(spam) {
+            // Filter out blacklisted events
+            const filteredSpam = spam ? spam.filter(sp => sp.reason !== 'blacklisted') : [];
+
+            if (!filteredSpam || filteredSpam.length === 0) {
+                spamDiv.innerHTML = '<div class="empty-state">No spam detected</div>';
+                return;
+            }
+
+            const recentSpam = filteredSpam.slice(-20);
+            const displaySpam = showAllSpam ? recentSpam : recentSpam.slice(0, 3);
+
+            spamDiv.innerHTML = displaySpam.map(sp => {
+                // Schedule auto-clear after 3 minutes
+                scheduleAutoClear(sp.timestamp, 'spam');
+
+                return `
+                    <div class="spam-item" data-timestamp="${sp.timestamp}">
+                        <button class="close-btn" onclick="removeSpam(${sp.timestamp})" title="Remove this spam entry">×</button>
+                        <div class="spam-header">
+                            <span class="spam-username">${escapeHtml(sp.username)}</span>
+                            <span class="spam-reason">${sp.reason.replace(/_/g, ' ')}</span>
+                        </div>
+                        <div class="spam-time">${formatTime(sp.timestamp)}</div>
+                        ${sp.content ? `<div class="spam-message">"${escapeHtml(sp.content)}"</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            // Add "Show More" button if there are more than 3 spam items
+            if (recentSpam.length > 3 && !showAllSpam) {
+                spamDiv.innerHTML += `
+                    <button class="show-more-btn" onclick="toggleShowAllSpam()">
+                        Show ${recentSpam.length - 3} More
+                    </button>
+                `;
+            } else if (showAllSpam && recentSpam.length > 3) {
+                spamDiv.innerHTML += `
+                    <button class="show-more-btn" onclick="toggleShowAllSpam()">
+                        Show Less
+                    </button>
+                `;
+            }
+        }
+
+        function updateBanned(banned) {
+            if (!banned || banned.length === 0) {
+                bannedDiv.innerHTML = '<div class="empty-state">No temporarily banned users</div>';
+                return;
+            }
+
+            bannedDiv.innerHTML = banned.map(ban => {
+                const remainingSeconds = Math.ceil(ban.remainingMs / 1000);
+                const remainingMinutes = Math.ceil(remainingSeconds / 60);
+                const timeDisplay = remainingMinutes > 1 ? `${remainingMinutes}m remaining` : `${remainingSeconds}s remaining`;
+
+                return `
+                    <div class="banned-item" data-user-id="${ban.userId}">
+                        <div class="banned-header">
+                            <span class="banned-username">⏱️ ${escapeHtml(ban.username)}</span>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <span class="banned-timer" id="timer-${ban.userId}">${timeDisplay}</span>
+                                <button class="btn-primary" onclick="unbanUser('${ban.userId}')">Unban Now</button>
+                            </div>
+                        </div>
+                        <div class="banned-info">
+                            <div style="color: #a0a0a0; font-size: 0.85em;">
+                                User ID: ${ban.userId}<br>
+                                Banned until: ${new Date(ban.until).toLocaleString()}
+                            </div>
+                            <div class="banned-reason">Reason: ${escapeHtml(ban.reason)}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            // Start countdown timers
+            banned.forEach(ban => {
+                startBanTimer(ban.userId, ban.remainingMs);
+            });
+        }
+
+        function startBanTimer(userId, remainingMs) {
+            const timerElement = document.getElementById(`timer-${userId}`);
+            if (!timerElement) return;
+
+            let remaining = remainingMs;
+            const interval = setInterval(() => {
+                remaining -= 1000;
+                if (remaining <= 0) {
+                    clearInterval(interval);
+                    fetchBanned();
+                    return;
+                }
+
+                const remainingSeconds = Math.ceil(remaining / 1000);
+                const remainingMinutes = Math.ceil(remainingSeconds / 60);
+                timerElement.textContent = remainingMinutes > 1 ? `${remainingMinutes}m remaining` : `${remainingSeconds}s remaining`;
+            }, 1000);
+        }
+
+        function updateBlacklist(blacklist) {
+            if (!blacklist || blacklist.length === 0) {
+                blacklistDiv.innerHTML = '<div class="empty-state">No blacklisted users</div>';
+                return;
+            }
+
+            blacklistDiv.innerHTML = blacklist.map(bl => `
+                <div class="blacklist-item">
+                    <div class="blacklist-header">
+                        <span class="blacklist-username">🔨 ${escapeHtml(bl.username)}</span>
+                        <button class="btn-danger" onclick="removeBlacklist('${bl.userId}')">Unblacklist</button>
+                    </div>
+                    <div class="blacklist-info">
+                        <div style="color: #a0a0a0; font-size: 0.85em;">
+                            User ID: ${bl.userId}<br>
+                            Blocked by ${escapeHtml(bl.blockedBy)} • ${formatTime(bl.timestamp)}
+                        </div>
+                        <div class="blacklist-reason">Reason: ${escapeHtml(bl.reason)}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function updateFeedbackGraph(dailyData) {
+            const feedbackGraphDiv = document.getElementById('feedbackGraph');
+
+            if (!dailyData || dailyData.length === 0) {
+                feedbackGraphDiv.innerHTML = '<div class="empty-state">No feedback data available</div>';
+                return;
+            }
+
+            // Graph dimensions
+            const width = 100; // percentage
+            const height = 100; // percentage
+            const padding = { top: 10, right: 5, bottom: 20, left: 5 };
+            const graphWidth = width - padding.left - padding.right;
+            const graphHeight = height - padding.top - padding.bottom;
+
+            // Find min and max values for scaling
+            const values = dailyData.map(d => d.overall);
+            const maxValue = Math.max(...values, 0);
+            const minValue = Math.min(...values, 0);
+            const range = maxValue - minValue || 1;
+
+            // Calculate positions for each point
+            const points = dailyData.map((day, i) => {
+                const x = padding.left + (i / (dailyData.length - 1)) * graphWidth;
+                const y = padding.top + ((maxValue - day.overall) / range) * graphHeight;
+                return { x, y, ...day };
+            });
+
+            // Create line path
+            const linePath = points.map((p, i) =>
+                `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`
+            ).join(' ');
+
+            // Calculate zero line position
+            const zeroY = padding.top + (maxValue / range) * graphHeight;
+
+            // Build SVG
+            feedbackGraphDiv.innerHTML = `
+                <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" style="overflow: visible;">
+                    <!-- Grid lines -->
+                    ${[0, 25, 50, 75, 100].map(percent => {
+                        const y = padding.top + (percent / 100) * graphHeight;
+                        return `<line class="graph-grid-line" x1="${padding.left}" y1="${y}" x2="${width - padding.right}" y2="${y}" />`;
+                    }).join('')}
+
+                    <!-- Zero line -->
+                    ${minValue < 0 ? `<line class="zero-line" x1="${padding.left}" y1="${zeroY}" x2="${width - padding.right}" y2="${zeroY}" />` : ''}
+
+                    <!-- Line -->
+                    <path class="graph-line" d="${linePath}" vector-effect="non-scaling-stroke" />
+
+                    <!-- Points -->
+                    ${points.map(p => `
+                        <circle class="graph-point ${p.overall < 0 ? 'negative' : ''}"
+                                cx="${p.x}" cy="${p.y}" r="4"
+                                vector-effect="non-scaling-stroke">
+                            <title>${p.date}: ${p.overall >= 0 ? '+' : ''}${p.overall} (👍${p.positive} 👎${p.negative})</title>
+                        </circle>
+                    `).join('')}
+                </svg>
+
+                <!-- Labels below graph -->
+                <svg viewBox="0 0 ${width} 20" preserveAspectRatio="xMidYMid meet" style="height: 20px; margin-top: 5px;">
+                    ${points.map(p => `
+                        <text class="graph-label" x="${p.x}" y="10">${p.date}</text>
+                    `).join('')}
+                </svg>
+
+                <!-- Values above graph -->
+                <svg viewBox="0 0 ${width} 15" preserveAspectRatio="xMidYMid meet" style="height: 15px; margin-bottom: 5px;">
+                    ${points.map(p => `
+                        <text class="graph-value" x="${p.x}" y="12">${p.overall >= 0 ? '+' : ''}${p.overall}</text>
+                    `).join('')}
+                </svg>
+            `;
+        }
+
+        async function endConversation(threadId) {
+            if (!confirm('Are you sure you want to end this conversation?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/conversations/${threadId}/end`, {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    fetchConversations();
+                    fetchStats();
+                } else {
+                    alert('Failed to end conversation');
+                }
+            } catch (error) {
+                console.error('Error ending conversation:', error);
+                alert('Failed to end conversation');
+            }
+        }
+
+        async function fetchFeedbackGraph() {
+            try {
+                const response = await fetch('/api/feedback/daily');
+                const dailyData = await response.json();
+                updateFeedbackGraph(dailyData);
+            } catch (error) {
+                console.error('Error fetching feedback graph:', error);
+            }
+        }
+
+        async function fetchConversations() {
+            const response = await fetch('/api/conversations');
+            const conversations = await response.json();
+            updateConversations(conversations);
+        }
+
+        async function fetchErrors() {
+            const response = await fetch('/api/errors');
+            const errors = await response.json();
+            updateErrors(errors);
+        }
+
+        async function fetchStats() {
+            const response = await fetch('/api/stats');
+            const stats = await response.json();
+            updateStats(stats);
+        }
+
+        async function fetchFeedback() {
+            const response = await fetch('/api/feedback');
+            const feedback = await response.json();
+            updateFeedback(feedback);
+        }
+
+        async function fetchSpam() {
+            const response = await fetch('/api/spam');
+            const spam = await response.json();
+            updateSpam(spam);
+        }
+
+        async function fetchBlacklist() {
+            const response = await fetch('/api/blacklist');
+            const blacklist = await response.json();
+            updateBlacklist(blacklist);
+        }
+
+        async function fetchBanned() {
+            const response = await fetch('/api/banned');
+            const banned = await response.json();
+            updateBanned(banned);
+        }
+
+        async function unbanUser(userId) {
+            if (!confirm(`Are you sure you want to unban user ${userId}?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/banned/${userId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    fetchBanned();
+                    fetchStats();
+                } else {
+                    const error = await response.text();
+                    alert('Failed to unban user: ' + error);
+                }
+            } catch (error) {
+                console.error('Error unbanning user:', error);
+                alert('Failed to unban user');
+            }
+        }
+
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
+
+            if (diff < 60000) return 'Just now';
+            if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+            if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+
+            return date.toLocaleString();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Clear individual error
+        function removeError(timestamp) {
+            // Cancel auto-clear timer if exists
+            cancelAutoClear(timestamp);
+
+            const errorItem = document.querySelector(`.error-item[data-timestamp="${timestamp}"]`);
+            if (errorItem) {
+                errorItem.style.opacity = '0';
+                errorItem.style.transform = 'translateX(-20px)';
+                setTimeout(() => {
+                    errorItem.remove();
+                    // Check if no errors left
+                    const remainingErrors = document.querySelectorAll('.error-item');
+                    if (remainingErrors.length === 0) {
+                        errorsDiv.innerHTML = '<div class="empty-state">No errors</div>';
+                    }
+                }, 300);
+            }
+        }
+
+        // Clear all errors
+        function clearAllErrors() {
+            const errorItems = document.querySelectorAll('.error-item');
+            errorItems.forEach((item, index) => {
+                setTimeout(() => {
+                    item.style.opacity = '0';
+                    item.style.transform = 'translateX(-20px)';
+                }, index * 50);
+            });
+            setTimeout(() => {
+                errorsDiv.innerHTML = '<div class="empty-state">No errors</div>';
+            }, errorItems.length * 50 + 300);
+        }
+
+        // Clear individual spam
+        function removeSpam(timestamp) {
+            // Cancel auto-clear timer if exists
+            cancelAutoClear(timestamp);
+
+            const spamItem = document.querySelector(`.spam-item[data-timestamp="${timestamp}"]`);
+            if (spamItem) {
+                spamItem.style.opacity = '0';
+                spamItem.style.transform = 'translateX(-20px)';
+                setTimeout(() => {
+                    spamItem.remove();
+                    // Check if no spam left
+                    const remainingSpam = document.querySelectorAll('.spam-item');
+                    if (remainingSpam.length === 0) {
+                        spamDiv.innerHTML = '<div class="empty-state">No spam detected</div>';
+                    }
+                }, 300);
+            }
+        }
+
+        // Clear all spam
+        function clearAllSpam() {
+            const spamItems = document.querySelectorAll('.spam-item');
+            spamItems.forEach((item, index) => {
+                setTimeout(() => {
+                    item.style.opacity = '0';
+                    item.style.transform = 'translateX(-20px)';
+                }, index * 50);
+            });
+            setTimeout(() => {
+                spamDiv.innerHTML = '<div class="empty-state">No spam detected</div>';
+            }, spamItems.length * 50 + 300);
+        }
+
+        // Auto-clear notifications after 3 minutes
+        function scheduleAutoClear(timestamp, type) {
+            // Cancel existing timer if it exists
+            cancelAutoClear(timestamp);
+
+            // Schedule new timer for 3 minutes (180000ms)
+            const timerId = setTimeout(() => {
+                if (type === 'error') {
+                    removeError(timestamp);
+                } else if (type === 'spam') {
+                    removeSpam(timestamp);
+                }
+                autoClearTimers.delete(timestamp);
+            }, 180000);
+
+            autoClearTimers.set(timestamp, timerId);
+        }
+
+        function cancelAutoClear(timestamp) {
+            const timerId = autoClearTimers.get(timestamp);
+            if (timerId) {
+                clearTimeout(timerId);
+                autoClearTimers.delete(timestamp);
+            }
+        }
+
+        // Toggle show all errors
+        function toggleShowAllErrors() {
+            showAllErrors = !showAllErrors;
+            fetchErrors();
+        }
+
+        // Toggle show all spam
+        function toggleShowAllSpam() {
+            showAllSpam = !showAllSpam;
+            fetchSpam();
+        }
+
+        // Add user to blacklist
+        async function addBlacklist() {
+            const userId = document.getElementById('blacklistUserId').value.trim();
+            const username = document.getElementById('blacklistUsername').value.trim();
+            const reason = document.getElementById('blacklistReason').value.trim();
+
+            if (!userId) {
+                alert('Please enter a user ID');
+                return;
+            }
+
+            if (!reason) {
+                alert('Please enter a reason for blacklisting');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/blacklist', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        userId,
+                        username: username || `User ${userId}`,
+                        reason,
+                        blockedBy: 'Dashboard Admin'
+                    })
+                });
+
+                if (response.ok) {
+                    // Clear form
+                    document.getElementById('blacklistUserId').value = '';
+                    document.getElementById('blacklistUsername').value = '';
+                    document.getElementById('blacklistReason').value = '';
+
+                    // Refresh blacklist
+                    fetchBlacklist();
+                    fetchStats();
+                } else {
+                    const error = await response.text();
+                    alert('Failed to blacklist user: ' + error);
+                }
+            } catch (error) {
+                console.error('Error blacklisting user:', error);
+                alert('Failed to blacklist user');
+            }
+        }
+
+        // Remove user from blacklist
+        async function removeBlacklist(userId) {
+            if (!confirm(`Are you sure you want to unblacklist user ${userId}?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/blacklist/${userId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    // Refresh blacklist
+                    fetchBlacklist();
+                    fetchStats();
+                } else {
+                    const error = await response.text();
+                    alert('Failed to unblacklist user: ' + error);
+                }
+            } catch (error) {
+                console.error('Error unblacklisting user:', error);
+                alert('Failed to unblacklist user');
+            }
+        }
+
+        autoScrollToggle.addEventListener('click', () => {
+            autoScroll = !autoScroll;
+            autoScrollToggle.textContent = `Auto-scroll: ${autoScroll ? 'ON' : 'OFF'}`;
+            autoScrollToggle.classList.toggle('disabled', !autoScroll);
+        });
+
+        // Theme toggle functionality
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('dashboard-theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('dashboard-theme', newTheme);
+        }
+
+        // Initialize theme on load
+        loadTheme();
+        connect();
+    </script>
+</body>
+</html>

@@ -58,13 +58,13 @@ class SpamFilter {
     }
   }
 
-  saveBlacklist() {
+  async saveBlacklist() {
     try {
       const blacklistArray = Array.from(this.blacklist.entries()).map(([userId, data]) => ({
         userId,
         ...data
       }));
-      fs.writeFileSync(this.blacklistFile, JSON.stringify(blacklistArray, null, 2));
+      await fs.promises.writeFile(this.blacklistFile, JSON.stringify(blacklistArray, null, 2));
     } catch (error) {
       console.error('Error saving blacklist:', error);
     }
@@ -336,7 +336,7 @@ class SpamFilter {
     return wasBlocked;
   }
 
-  addToBlacklist(userId, username, reason, blockedBy) {
+  async addToBlacklist(userId, username, reason, blockedBy) {
     this.blacklist.set(userId, {
       username,
       reason: reason || 'No reason provided',
@@ -345,7 +345,7 @@ class SpamFilter {
     });
 
     // Save to file
-    this.saveBlacklist();
+    await this.saveBlacklist();
 
     this.logSpamEvent(userId, username, '', 'blacklisted', {
       reason,
@@ -356,11 +356,11 @@ class SpamFilter {
     return true;
   }
 
-  removeFromBlacklist(userId) {
+  async removeFromBlacklist(userId) {
     const wasBlacklisted = this.blacklist.delete(userId);
     if (wasBlacklisted) {
       // Save to file
-      this.saveBlacklist();
+      await this.saveBlacklist();
       console.log(`✅ User ${userId} removed from blacklist`);
     }
     return wasBlacklisted;

@@ -502,7 +502,7 @@ class SupportBot extends EventEmitter {
       }
 
       // Add to blacklist
-      this.spamFilter.addToBlacklist(
+      await this.spamFilter.addToBlacklist(
         targetUser.id,
         targetUser.tag,
         reason,
@@ -566,7 +566,7 @@ class SupportBot extends EventEmitter {
       }
 
       // Remove from blacklist
-      this.spamFilter.removeFromBlacklist(targetUser.id);
+      await this.spamFilter.removeFromBlacklist(targetUser.id);
 
       await interaction.reply({
         content: `✅ User ${targetUser.tag} has been unblocked and can now create support threads.`,

@@ -138,7 +138,7 @@ export class DashboardServer {
     });
 
     // API endpoint to add user to blacklist
-    this.app.post('/api/blacklist', (req, res) => {
+    this.app.post('/api/blacklist', async (req, res) => {
       try {
         const { userId, username, reason, blockedBy } = req.body;
 
@@ -146,7 +146,7 @@ export class DashboardServer {
           return res.status(400).send('userId and reason are required');
         }
 
-        this.bot.spamFilter.addToBlacklist(userId, username || `User ${userId}`, reason, blockedBy || 'Dashboard Admin');
+        await this.bot.spamFilter.addToBlacklist(userId, username || `User ${userId}`, reason, blockedBy || 'Dashboard Admin');
 
         // Broadcast update to all connected clients
         this.broadcast({
@@ -162,7 +162,7 @@ export class DashboardServer {
     });
 
     // API endpoint to remove user from blacklist
-    this.app.delete('/api/blacklist/:userId', (req, res) => {
+    this.app.delete('/api/blacklist/:userId', async (req, res) => {
       try {
         const { userId } = req.params;
 
@@ -170,7 +170,7 @@ export class DashboardServer {
           return res.status(400).send('userId is required');
         }
 
-        this.bot.spamFilter.removeFromBlacklist(userId);
+        await this.bot.spamFilter.removeFromBlacklist(userId);
 
         // Broadcast update to all connected clients
         this.broadcast({

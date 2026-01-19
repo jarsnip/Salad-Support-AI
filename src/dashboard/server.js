@@ -202,6 +202,14 @@ export class DashboardServer {
         data: spam
       });
     });
+
+    // Listen for conversation ended
+    this.bot.on('conversationEnded', (data) => {
+      this.broadcast({
+        type: 'conversationEnded',
+        data
+      });
+    });
   }
 
   getConversationsData() {

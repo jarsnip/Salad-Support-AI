@@ -383,6 +383,13 @@ class SupportBot extends EventEmitter {
         // Mark conversation as ended
         this.conversationManager.endConversation(channel.id);
 
+        // Emit conversation ended event for dashboard
+        this.emit('conversationEnded', {
+          threadId: channel.id,
+          reason: 'feedback',
+          timestamp: Date.now()
+        });
+
         // Send transcript if enabled
         if (this.config.autoEnd?.sendTranscripts) {
           const originalPosterId = this.conversationManager.getConversation(channel.id).originalPosterId;
@@ -574,6 +581,13 @@ class SupportBot extends EventEmitter {
 
         // End the conversation
         this.conversationManager.endConversation(threadId);
+
+        // Emit conversation ended event for dashboard
+        this.emit('conversationEnded', {
+          threadId: threadId,
+          reason: 'auto-end',
+          timestamp: Date.now()
+        });
 
         // Send transcript if enabled
         if (this.config.autoEnd.sendTranscripts) {

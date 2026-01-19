@@ -19,7 +19,8 @@ class ConversationManager {
         originalPosterUsername: null,
         ended: false,
         deleteScheduled: null,
-        feedback: null // Store conversation feedback
+        feedback: null, // Store conversation feedback
+        initialMessage: null // Store first user message for feedback analysis
       });
     }
     return this.conversations.get(threadId);
@@ -76,6 +77,11 @@ class ConversationManager {
     });
 
     conversation.lastActivity = Date.now();
+
+    // Capture the first user message for feedback analysis
+    if (role === 'user' && !conversation.initialMessage) {
+      conversation.initialMessage = content;
+    }
 
     // Track when bot sends a message (for auto-end feature)
     if (role === 'assistant') {
@@ -181,10 +187,10 @@ class ConversationManager {
             --border-color: #ddd;
             --header-gradient-start: #667eea;
             --header-gradient-end: #764ba2;
-            --accent-color: #102c80;
-            --accent-hover: #1a3ba0;
+            --accent-color: #0891B2;
+            --accent-hover: #0e7490;
             --footer-text: #999;
-            --positive-color: #102c80;
+            --positive-color: #0891B2;
             --negative-color: #ff6b6b;
         }
 
@@ -196,10 +202,10 @@ class ConversationManager {
             --border-color: #3a3a52;
             --header-gradient-start: #1a1a2e;
             --header-gradient-end: #16213e;
-            --accent-color: #102c80;
-            --accent-hover: #1a3ba0;
+            --accent-color: #06B6D4;
+            --accent-hover: #0891B2;
             --footer-text: #888;
-            --positive-color: #102c80;
+            --positive-color: #06B6D4;
             --negative-color: #ff6b6b;
         }
 
@@ -266,8 +272,8 @@ class ConversationManager {
         }
 
         .feedback-badge.positive {
-            background: var(--positive-color);
-            color: #1a1a2e;
+            background: #0891B2;
+            color: white;
         }
 
         .feedback-badge.negative {
@@ -289,7 +295,7 @@ class ConversationManager {
         }
 
         .message.user {
-            border-left-color: var(--accent-color);
+            border-left-color: #0891B2;
         }
 
         .message.assistant {
@@ -310,7 +316,7 @@ class ConversationManager {
         }
 
         .role.user {
-            color: var(--accent-color);
+            color: #0891B2;
         }
 
         .role.assistant {

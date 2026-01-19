@@ -105,11 +105,18 @@ class SpamFilter {
     // Check cooldown
     const cooldownCheck = this.checkCooldown(userId);
     if (!cooldownCheck.allowed) {
+      // Increment cooldown attempts (side effect moved from check method)
+      const activity = this.getUserActivity(userId);
+      activity.cooldownAttempts = (activity.cooldownAttempts || 0) + 1;
+
       // Only log spam and record violation if user has attempted 3+ times
-      if (cooldownCheck.details.attempts >= 3) {
+      if (activity.cooldownAttempts >= 3) {
         this.recordViolation(userId, username, cooldownCheck.reason);
-        this.logSpamEvent(userId, username, content, cooldownCheck.reason, { attempts: cooldownCheck.details.attempts });
+        this.logSpamEvent(userId, username, content, cooldownCheck.reason, { attempts: activity.cooldownAttempts });
       }
+
+      // Update the return object with incremented attempts
+      cooldownCheck.details.attempts = activity.cooldownAttempts;
       return cooldownCheck;
     }
 
@@ -207,19 +214,14 @@ class SpamFilter {
     if (activity.lastThreadTime && (now - activity.lastThreadTime) < this.cooldownPeriod) {
       const waitTime = Math.ceil((activity.lastThreadTime + this.cooldownPeriod - now) / 1000);
 
-      // Increment cooldown attempts counter
-      activity.cooldownAttempts = (activity.cooldownAttempts || 0) + 1;
-
+      // Return current attempts count without modifying (no side effects)
       return {
         allowed: false,
         reason: 'cooldown',
         message: `⏱️ Please wait ${waitTime} seconds before creating another support thread.`,
-        details: { waitTime, attempts: activity.cooldownAttempts }
+        details: { waitTime, attempts: activity.cooldownAttempts || 0 }
       };
     }
-
-    // Reset cooldown attempts when cooldown period passes
-    activity.cooldownAttempts = 0;
 
     return { allowed: true };
   }
@@ -286,6 +288,8 @@ class SpamFilter {
 
     activity.threads.push(now);
     activity.lastThreadTime = now;
+    // Reset cooldown attempts when thread is successfully created
+    activity.cooldownAttempts = 0;
   }
 
   recordMessage(userId, content) {

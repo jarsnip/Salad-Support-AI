@@ -13,8 +13,8 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #333;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            color: #e0e0e0;
             min-height: 100vh;
             padding: 20px;
         }
@@ -40,12 +40,13 @@
         }
 
         .stat-card {
-            background: white;
+            background: #252b48;
             border-radius: 12px;
             padding: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
             text-align: center;
             transition: transform 0.2s;
+            border: 1px solid #3a4266;
         }
 
         .stat-card:hover {
@@ -55,12 +56,12 @@
         .stat-value {
             font-size: 2.5em;
             font-weight: bold;
-            color: #667eea;
+            color: #8b9eff;
             margin-bottom: 5px;
         }
 
         .stat-label {
-            color: #666;
+            color: #a0a0a0;
             font-size: 0.9em;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -74,23 +75,25 @@
         }
 
         .panel {
-            background: white;
+            background: #252b48;
             border-radius: 12px;
             padding: 25px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            border: 1px solid #3a4266;
+            margin-bottom: 25px;
         }
 
         .panel h2 {
-            color: #667eea;
+            color: #8b9eff;
             margin-bottom: 20px;
             font-size: 1.5em;
-            border-bottom: 2px solid #f0f0f0;
+            border-bottom: 2px solid #3a4266;
             padding-bottom: 10px;
         }
 
         .conversation-item {
-            background: #f8f9fa;
-            border-left: 4px solid #667eea;
+            background: #1e2438;
+            border-left: 4px solid #8b9eff;
             padding: 15px;
             margin-bottom: 15px;
             border-radius: 8px;
@@ -99,7 +102,7 @@
         }
 
         .conversation-item:hover {
-            background: #e9ecef;
+            background: #2a3050;
             transform: translateX(5px);
         }
 
@@ -113,37 +116,38 @@
         .thread-id {
             font-family: 'Courier New', monospace;
             font-size: 0.85em;
-            color: #667eea;
+            color: #8b9eff;
             font-weight: bold;
         }
 
         .message-count {
-            background: #667eea;
-            color: white;
+            background: #8b9eff;
+            color: #1a1a2e;
             padding: 4px 10px;
             border-radius: 12px;
             font-size: 0.8em;
+            font-weight: 600;
         }
 
         .conversation-time {
-            color: #999;
+            color: #a0a0a0;
             font-size: 0.85em;
         }
 
         .message-item {
-            background: white;
+            background: #1a1f35;
             padding: 10px;
             margin: 8px 0;
             border-radius: 6px;
-            border-left: 3px solid #ddd;
+            border-left: 3px solid #3a4266;
         }
 
         .message-item.user {
-            border-left-color: #764ba2;
+            border-left-color: #a78bfa;
         }
 
         .message-item.assistant {
-            border-left-color: #667eea;
+            border-left-color: #8b9eff;
         }
 
         .message-role {
@@ -154,35 +158,105 @@
         }
 
         .message-item.user .message-role {
-            color: #764ba2;
+            color: #a78bfa;
         }
 
         .message-item.assistant .message-role {
-            color: #667eea;
+            color: #8b9eff;
         }
 
         .message-content {
-            color: #333;
+            color: #d0d0d0;
             font-size: 0.9em;
             line-height: 1.5;
         }
 
         .error-item {
-            background: #fff3cd;
+            background: #3d2020;
             border-left: 4px solid #ff6b6b;
             padding: 15px;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             border-radius: 8px;
+            position: relative;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        .error-item:hover .close-btn {
+            opacity: 1;
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 24px;
+            height: 24px;
+            border: none;
+            background: #ff6b6b;
+            color: white;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            line-height: 1;
+            opacity: 0.7;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .close-btn:hover {
+            background: #ff5252;
+            transform: scale(1.1);
+            opacity: 1;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #3a4266;
+            padding-bottom: 10px;
+        }
+
+        .panel-header h2 {
+            margin-bottom: 0;
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .clear-all-btn {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .clear-all-btn:hover {
+            background: #ff5252;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+        }
+
+        .clear-all-btn:active {
+            transform: translateY(0);
         }
 
         .error-time {
-            color: #999;
+            color: #a0a0a0;
             font-size: 0.85em;
             margin-bottom: 5px;
         }
 
         .error-message {
-            color: #721c24;
+            color: #ffb3b3;
             font-weight: 500;
             margin-bottom: 8px;
         }
@@ -190,24 +264,30 @@
         .error-stack {
             font-family: 'Courier New', monospace;
             font-size: 0.75em;
-            color: #666;
+            color: #c0c0c0;
             max-height: 100px;
             overflow-y: auto;
-            background: white;
+            background: #2a1616;
             padding: 8px;
             border-radius: 4px;
         }
 
         .feedback-item {
-            background: #f8f9fa;
-            border-left: 4px solid #28a745;
-            padding: 15px;
-            margin-bottom: 15px;
+            background: #1e2438;
+            border-left: 4px solid #4ade80;
+            padding: 20px;
+            margin-bottom: 20px;
             border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .feedback-item:hover {
+            background: #2a3050;
+            transform: translateX(3px);
         }
 
         .feedback-item.negative {
-            border-left-color: #dc3545;
+            border-left-color: #f87171;
         }
 
         .feedback-header {
@@ -218,58 +298,72 @@
         }
 
         .feedback-type {
-            font-size: 1.5em;
+            font-size: 1.8em;
         }
 
         .feedback-time {
-            color: #999;
+            color: #a0a0a0;
             font-size: 0.85em;
         }
 
         .spam-item {
-            background: #ffe6e6;
+            background: #3d2020;
             border-left: 4px solid #ff6b6b;
-            padding: 15px;
-            margin-bottom: 10px;
+            padding: 18px;
+            margin-bottom: 18px;
             border-radius: 8px;
+            position: relative;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        .spam-item:hover {
+            background: #4d2828;
+            transform: translateX(3px);
+        }
+
+        .spam-item:hover .close-btn {
+            opacity: 1;
         }
 
         .spam-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
 
         .spam-username {
             font-weight: bold;
-            color: #333;
+            color: #ffb3b3;
+            font-size: 1.05em;
         }
 
         .spam-reason {
             background: #ff6b6b;
             color: white;
-            padding: 3px 8px;
+            padding: 4px 10px;
             border-radius: 4px;
             font-size: 0.75em;
             text-transform: uppercase;
+            font-weight: 600;
         }
 
         .spam-time {
-            color: #999;
+            color: #a0a0a0;
             font-size: 0.85em;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
         }
 
         .spam-message {
             font-size: 0.9em;
-            color: #666;
+            color: #c0c0c0;
             font-style: italic;
+            margin-top: 8px;
         }
 
         .blacklist-item {
-            background: #fff0f0;
-            border-left: 4px solid #dc3545;
+            background: #3d2020;
+            border-left: 4px solid #ef4444;
             padding: 15px;
             margin-bottom: 10px;
             border-radius: 8px;
@@ -284,12 +378,12 @@
 
         .blacklist-username {
             font-weight: bold;
-            color: #dc3545;
+            color: #f87171;
             font-size: 1.1em;
         }
 
         .blacklist-badge {
-            background: #dc3545;
+            background: #ef4444;
             color: white;
             padding: 3px 10px;
             border-radius: 4px;
@@ -301,13 +395,13 @@
         .blacklist-info {
             margin-top: 8px;
             font-size: 0.9em;
-            color: #666;
+            color: #a0a0a0;
         }
 
         .blacklist-reason {
             margin-top: 5px;
             font-style: italic;
-            color: #721c24;
+            color: #ffb3b3;
         }
 
         .status-indicator {
@@ -343,7 +437,7 @@
 
         .empty-state {
             text-align: center;
-            color: #999;
+            color: #6b7280;
             padding: 40px;
             font-style: italic;
         }
@@ -352,24 +446,27 @@
             position: fixed;
             bottom: 30px;
             right: 30px;
-            background: #667eea;
-            color: white;
+            background: #8b9eff;
+            color: #1a1a2e;
             border: none;
             padding: 15px 25px;
             border-radius: 50px;
             cursor: pointer;
             font-size: 1em;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            font-weight: 600;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
             transition: all 0.2s;
         }
 
         .auto-scroll-toggle:hover {
-            background: #764ba2;
+            background: #a78bfa;
             transform: scale(1.05);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.5);
         }
 
         .auto-scroll-toggle.disabled {
-            background: #6c757d;
+            background: #4b5563;
+            color: #9ca3af;
         }
 
         @media (max-width: 768px) {
@@ -428,7 +525,10 @@
             </div>
 
             <div class="panel">
-                <h2>⚠️ Recent Errors</h2>
+                <div class="panel-header">
+                    <h2>⚠️ Recent Errors</h2>
+                    <button class="clear-all-btn" onclick="clearAllErrors()">Clear All</button>
+                </div>
                 <div id="errors">
                     <div class="empty-state">No errors</div>
                 </div>
@@ -443,7 +543,10 @@
         </div>
 
         <div class="panel">
-            <h2>🚫 Spam Detection</h2>
+            <div class="panel-header">
+                <h2>🚫 Spam Detection</h2>
+                <button class="clear-all-btn" onclick="clearAllSpam()">Clear All</button>
+            </div>
             <div id="spam">
                 <div class="empty-state">No spam detected</div>
             </div>
@@ -558,7 +661,7 @@
                         <span class="message-count">${conv.messageCount} messages</span>
                     </div>
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px;">
-                        <div style="color: #667eea; font-weight: 500; font-size: 0.9em;">
+                        <div style="color: #8b9eff; font-weight: 500; font-size: 0.9em;">
                             👤 ${escapeHtml(conv.originalPoster)}
                         </div>
                         <div class="conversation-time">
@@ -584,7 +687,8 @@
             }
 
             errorsDiv.innerHTML = errors.slice(-10).reverse().map(error => `
-                <div class="error-item">
+                <div class="error-item" data-timestamp="${error.timestamp}">
+                    <button class="close-btn" onclick="removeError(${error.timestamp})" title="Remove this error">×</button>
                     <div class="error-time">${formatTime(error.timestamp)}</div>
                     <div class="error-message">${escapeHtml(error.message)}</div>
                     ${error.stack ? `<div class="error-stack">${escapeHtml(error.stack.substring(0, 300))}</div>` : ''}
@@ -620,7 +724,8 @@
             }
 
             spamDiv.innerHTML = spam.slice(-20).map(sp => `
-                <div class="spam-item">
+                <div class="spam-item" data-timestamp="${sp.timestamp}">
+                    <button class="close-btn" onclick="removeSpam(${sp.timestamp})" title="Remove this spam entry">×</button>
                     <div class="spam-header">
                         <span class="spam-username">${escapeHtml(sp.username)}</span>
                         <span class="spam-reason">${sp.reason.replace(/_/g, ' ')}</span>
@@ -644,7 +749,7 @@
                         <span class="blacklist-badge">BLOCKED</span>
                     </div>
                     <div class="blacklist-info">
-                        <div style="color: #999; font-size: 0.85em;">
+                        <div style="color: #a0a0a0; font-size: 0.85em;">
                             Blocked by ${escapeHtml(bl.blockedBy)} • ${formatTime(bl.timestamp)}
                         </div>
                         <div class="blacklist-reason">Reason: ${escapeHtml(bl.reason)}</div>
@@ -712,6 +817,68 @@
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
+        }
+
+        // Clear individual error
+        function removeError(timestamp) {
+            const errorItem = document.querySelector(`.error-item[data-timestamp="${timestamp}"]`);
+            if (errorItem) {
+                errorItem.style.opacity = '0';
+                errorItem.style.transform = 'translateX(-20px)';
+                setTimeout(() => {
+                    errorItem.remove();
+                    // Check if no errors left
+                    const remainingErrors = document.querySelectorAll('.error-item');
+                    if (remainingErrors.length === 0) {
+                        errorsDiv.innerHTML = '<div class="empty-state">No errors</div>';
+                    }
+                }, 300);
+            }
+        }
+
+        // Clear all errors
+        function clearAllErrors() {
+            const errorItems = document.querySelectorAll('.error-item');
+            errorItems.forEach((item, index) => {
+                setTimeout(() => {
+                    item.style.opacity = '0';
+                    item.style.transform = 'translateX(-20px)';
+                }, index * 50);
+            });
+            setTimeout(() => {
+                errorsDiv.innerHTML = '<div class="empty-state">No errors</div>';
+            }, errorItems.length * 50 + 300);
+        }
+
+        // Clear individual spam
+        function removeSpam(timestamp) {
+            const spamItem = document.querySelector(`.spam-item[data-timestamp="${timestamp}"]`);
+            if (spamItem) {
+                spamItem.style.opacity = '0';
+                spamItem.style.transform = 'translateX(-20px)';
+                setTimeout(() => {
+                    spamItem.remove();
+                    // Check if no spam left
+                    const remainingSpam = document.querySelectorAll('.spam-item');
+                    if (remainingSpam.length === 0) {
+                        spamDiv.innerHTML = '<div class="empty-state">No spam detected</div>';
+                    }
+                }, 300);
+            }
+        }
+
+        // Clear all spam
+        function clearAllSpam() {
+            const spamItems = document.querySelectorAll('.spam-item');
+            spamItems.forEach((item, index) => {
+                setTimeout(() => {
+                    item.style.opacity = '0';
+                    item.style.transform = 'translateX(-20px)';
+                }, index * 50);
+            });
+            setTimeout(() => {
+                spamDiv.innerHTML = '<div class="empty-state">No spam detected</div>';
+            }, spamItems.length * 50 + 300);
         }
 
         autoScrollToggle.addEventListener('click', () => {

@@ -124,18 +124,26 @@ class SupportBot extends EventEmitter {
       console.log(`📌 Created thread: ${thread.name} (ID: ${thread.id})`);
 
       // Set thread permissions: Only OP can send messages, others can only read
-      await thread.permissionOverwrites.edit(message.author.id, {
-        SendMessages: true,
-        ViewChannel: true
-      });
+      try {
+        if (thread.permissionOverwrites) {
+          await thread.permissionOverwrites.edit(message.author.id, {
+            SendMessages: true,
+            ViewChannel: true
+          });
 
-      // Everyone else can view but not send (deny @everyone from sending)
-      await thread.permissionOverwrites.edit(thread.guild.roles.everyone, {
-        SendMessages: false,
-        ViewChannel: true
-      });
+          // Everyone else can view but not send (deny @everyone from sending)
+          await thread.permissionOverwrites.edit(thread.guild.roles.everyone, {
+            SendMessages: false,
+            ViewChannel: true
+          });
 
-      console.log(`🔒 Thread locked to original poster: ${message.author.tag}`);
+          console.log(`🔒 Thread locked to original poster: ${message.author.tag}`);
+        } else {
+          console.log(`⚠️ Thread permissions not available (thread type: ${thread.type})`);
+        }
+      } catch (permError) {
+        console.error(`⚠️ Could not set thread permissions: ${permError.message}`);
+      }
 
       // Track the original poster
       this.conversationManager.setOriginalPoster(thread.id, message.author.id, message.author.username);

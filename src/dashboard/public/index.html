@@ -634,6 +634,25 @@
             color: #9ca3af;
         }
 
+        .show-more-btn {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-top: 10px;
+            width: 100%;
+            transition: all 0.2s;
+        }
+
+        .show-more-btn:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+        }
+
         @media (max-width: 768px) {
             .content-grid {
                 grid-template-columns: 1fr;
@@ -744,6 +763,9 @@
         let ws;
         let autoScroll = true;
         let reconnectTimeout;
+        let showAllErrors = false;
+        let showAllSpam = false;
+        const autoClearTimers = new Map(); // timestamp -> timeoutId
 
         const statusIndicator = document.getElementById('statusIndicator');
         const statusText = document.getElementById('statusText');
@@ -870,14 +892,37 @@
                 return;
             }
 
-            errorsDiv.innerHTML = errors.slice(-10).reverse().map(error => `
-                <div class="error-item" data-timestamp="${error.timestamp}">
-                    <button class="close-btn" onclick="removeError(${error.timestamp})" title="Remove this error">×</button>
-                    <div class="error-time">${formatTime(error.timestamp)}</div>
-                    <div class="error-message">${escapeHtml(error.message)}</div>
-                    ${error.stack ? `<div class="error-stack">${escapeHtml(error.stack.substring(0, 300))}</div>` : ''}
-                </div>
-            `).join('');
+            const recentErrors = errors.slice(-10).reverse();
+            const displayErrors = showAllErrors ? recentErrors : recentErrors.slice(0, 3);
+
+            errorsDiv.innerHTML = displayErrors.map(error => {
+                // Schedule auto-clear after 3 minutes
+                scheduleAutoClear(error.timestamp, 'error');
+
+                return `
+                    <div class="error-item" data-timestamp="${error.timestamp}">
+                        <button class="close-btn" onclick="removeError(${error.timestamp})" title="Remove this error">×</button>
+                        <div class="error-time">${formatTime(error.timestamp)}</div>
+                        <div class="error-message">${escapeHtml(error.message)}</div>
+                        ${error.stack ? `<div class="error-stack">${escapeHtml(error.stack.substring(0, 300))}</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            // Add "Show More" button if there are more than 3 errors
+            if (recentErrors.length > 3 && !showAllErrors) {
+                errorsDiv.innerHTML += `
+                    <button class="show-more-btn" onclick="toggleShowAllErrors()">
+                        Show ${recentErrors.length - 3} More
+                    </button>
+                `;
+            } else if (showAllErrors && recentErrors.length > 3) {
+                errorsDiv.innerHTML += `
+                    <button class="show-more-btn" onclick="toggleShowAllErrors()">
+                        Show Less
+                    </button>
+                `;
+            }
 
             if (autoScroll) {
                 errorsDiv.scrollTop = errorsDiv.scrollHeight;
@@ -911,22 +956,48 @@
         }
 
         function updateSpam(spam) {
-            if (!spam || spam.length === 0) {
+            // Filter out blacklisted events
+            const filteredSpam = spam ? spam.filter(sp => sp.reason !== 'blacklisted') : [];
+
+            if (!filteredSpam || filteredSpam.length === 0) {
                 spamDiv.innerHTML = '<div class="empty-state">No spam detected</div>';
                 return;
             }
 
-            spamDiv.innerHTML = spam.slice(-20).map(sp => `
-                <div class="spam-item" data-timestamp="${sp.timestamp}">
-                    <button class="close-btn" onclick="removeSpam(${sp.timestamp})" title="Remove this spam entry">×</button>
-                    <div class="spam-header">
-                        <span class="spam-username">${escapeHtml(sp.username)}</span>
-                        <span class="spam-reason">${sp.reason.replace(/_/g, ' ')}</span>
+            const recentSpam = filteredSpam.slice(-20);
+            const displaySpam = showAllSpam ? recentSpam : recentSpam.slice(0, 3);
+
+            spamDiv.innerHTML = displaySpam.map(sp => {
+                // Schedule auto-clear after 3 minutes
+                scheduleAutoClear(sp.timestamp, 'spam');
+
+                return `
+                    <div class="spam-item" data-timestamp="${sp.timestamp}">
+                        <button class="close-btn" onclick="removeSpam(${sp.timestamp})" title="Remove this spam entry">×</button>
+                        <div class="spam-header">
+                            <span class="spam-username">${escapeHtml(sp.username)}</span>
+                            <span class="spam-reason">${sp.reason.replace(/_/g, ' ')}</span>
+                        </div>
+                        <div class="spam-time">${formatTime(sp.timestamp)}</div>
+                        ${sp.content ? `<div class="spam-message">"${escapeHtml(sp.content)}"</div>` : ''}
                     </div>
-                    <div class="spam-time">${formatTime(sp.timestamp)}</div>
-                    ${sp.content ? `<div class="spam-message">"${escapeHtml(sp.content)}"</div>` : ''}
-                </div>
-            `).join('');
+                `;
+            }).join('');
+
+            // Add "Show More" button if there are more than 3 spam items
+            if (recentSpam.length > 3 && !showAllSpam) {
+                spamDiv.innerHTML += `
+                    <button class="show-more-btn" onclick="toggleShowAllSpam()">
+                        Show ${recentSpam.length - 3} More
+                    </button>
+                `;
+            } else if (showAllSpam && recentSpam.length > 3) {
+                spamDiv.innerHTML += `
+                    <button class="show-more-btn" onclick="toggleShowAllSpam()">
+                        Show Less
+                    </button>
+                `;
+            }
         }
 
         function updateBlacklist(blacklist) {
@@ -1015,6 +1086,9 @@
 
         // Clear individual error
         function removeError(timestamp) {
+            // Cancel auto-clear timer if exists
+            cancelAutoClear(timestamp);
+
             const errorItem = document.querySelector(`.error-item[data-timestamp="${timestamp}"]`);
             if (errorItem) {
                 errorItem.style.opacity = '0';
@@ -1046,6 +1120,9 @@
 
         // Clear individual spam
         function removeSpam(timestamp) {
+            // Cancel auto-clear timer if exists
+            cancelAutoClear(timestamp);
+
             const spamItem = document.querySelector(`.spam-item[data-timestamp="${timestamp}"]`);
             if (spamItem) {
                 spamItem.style.opacity = '0';
@@ -1073,6 +1150,44 @@
             setTimeout(() => {
                 spamDiv.innerHTML = '<div class="empty-state">No spam detected</div>';
             }, spamItems.length * 50 + 300);
+        }
+
+        // Auto-clear notifications after 3 minutes
+        function scheduleAutoClear(timestamp, type) {
+            // Cancel existing timer if it exists
+            cancelAutoClear(timestamp);
+
+            // Schedule new timer for 3 minutes (180000ms)
+            const timerId = setTimeout(() => {
+                if (type === 'error') {
+                    removeError(timestamp);
+                } else if (type === 'spam') {
+                    removeSpam(timestamp);
+                }
+                autoClearTimers.delete(timestamp);
+            }, 180000);
+
+            autoClearTimers.set(timestamp, timerId);
+        }
+
+        function cancelAutoClear(timestamp) {
+            const timerId = autoClearTimers.get(timestamp);
+            if (timerId) {
+                clearTimeout(timerId);
+                autoClearTimers.delete(timestamp);
+            }
+        }
+
+        // Toggle show all errors
+        function toggleShowAllErrors() {
+            showAllErrors = !showAllErrors;
+            fetchErrors();
+        }
+
+        // Toggle show all spam
+        function toggleShowAllSpam() {
+            showAllSpam = !showAllSpam;
+            fetchSpam();
         }
 
         // Add user to blacklist

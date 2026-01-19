@@ -354,10 +354,11 @@ class SupportBot extends EventEmitter {
       const originalPosterId = this.conversationManager.getOriginalPosterId(channel.id);
       const userMention = originalPosterId ? `<@${originalPosterId}>` : '';
 
-      const replyMessage = await interaction.reply({
-        content: `${userMention} 👋 Thank you for using our support! Please provide feedback by reacting to this message:\n👍 if your issue was resolved\n👎 if you need more help`,
-        fetchReply: true
+      await interaction.reply({
+        content: `${userMention} 👋 Thank you for using our support! Please provide feedback by reacting to this message:\n👍 if your issue was resolved\n👎 if you need more help`
       });
+
+      const replyMessage = await interaction.fetchReply();
 
       await replyMessage.react('👍');
       await replyMessage.react('👎');
@@ -404,8 +405,10 @@ class SupportBot extends EventEmitter {
 
         // Send transcript if enabled
         if (this.config.autoEnd?.sendTranscripts) {
-          const originalPosterId = this.conversationManager.getConversation(channel.id).originalPosterId;
-          await this.sendTranscriptDM(channel.id, originalPosterId);
+          const conversation = this.conversationManager.getConversation(channel.id);
+          if (conversation && conversation.originalPosterId) {
+            await this.sendTranscriptDM(channel.id, conversation.originalPosterId);
+          }
         }
 
         // If negative feedback and follow-up channel configured, notify support team
@@ -719,6 +722,11 @@ class SupportBot extends EventEmitter {
 
   async sendTranscriptDM(threadId, userId) {
     try {
+      if (!userId) {
+        console.log(`No user ID provided for transcript ${threadId}`);
+        return;
+      }
+
       const html = this.conversationManager.generateHTMLTranscript(threadId);
       if (!html) {
         console.log(`No transcript to send for thread ${threadId}`);

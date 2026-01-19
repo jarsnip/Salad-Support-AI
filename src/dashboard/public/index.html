@@ -488,16 +488,6 @@
             font-weight: bold;
         }
 
-        .message-count {
-            background: var(--accent-color);
-            color: white;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 0.8em;
-            font-weight: 600;
-            text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
-        }
-
         .conversation-time {
             color: var(--muted-text);
             font-size: 0.85em;
@@ -1058,6 +1048,7 @@
             border-radius: 12px;
             font-size: 0.75em;
             font-weight: 600;
+            text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
         }
 
         .transcript-actions {
@@ -1671,8 +1662,8 @@
 
                 <div class="panel">
                     <div class="panel-header">
-                        <h2>💬 Active Threads (<span id="liveConvoCount">0</span>)</h2>
-                        <button class="btn-primary" onclick="fetchConversations()">🔄 Refresh</button>
+                        <h2>💬 Active Threads</h2>
+                        <button class="btn btn-primary" onclick="fetchConversations()">🔄 Refresh</button>
                     </div>
                     <div id="conversations">
                         <div class="empty-state">No active conversations</div>

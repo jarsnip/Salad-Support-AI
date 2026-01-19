@@ -1,4 +1,6 @@
 import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
 
 class SpamFilter {
   constructor(config = {}) {
@@ -9,6 +11,7 @@ class SpamFilter {
     this.autoBanThreshold = config.autoBanThreshold || 5;
     this.banDuration = config.banDuration || 60 * 60 * 1000; // 1 hour
     this.bypassRoles = config.bypassRoles || ['Administrator', 'Moderator', 'Admin', 'Mod'];
+    this.blacklistFile = path.join(process.cwd(), 'data', 'blacklist.json');
 
     // Track user activity
     this.userActivity = new Map(); // userId -> { threads: [], violations: [], lastThreadTime }
@@ -18,8 +21,43 @@ class SpamFilter {
     this.spamEvents = []; // Log spam attempts
     this.maxSpamEvents = 100;
 
+    // Load blacklist from file
+    this.loadBlacklist();
+
     // Cleanup old data every 5 minutes
     setInterval(() => this.cleanup(), 5 * 60 * 1000);
+  }
+
+  loadBlacklist() {
+    try {
+      // Ensure data directory exists
+      const dataDir = path.dirname(this.blacklistFile);
+      if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+      }
+
+      // Load blacklist if file exists
+      if (fs.existsSync(this.blacklistFile)) {
+        const data = fs.readFileSync(this.blacklistFile, 'utf8');
+        const blacklistArray = JSON.parse(data);
+        this.blacklist = new Map(blacklistArray.map(item => [item.userId, item]));
+        console.log(`Loaded ${this.blacklist.size} blacklisted users from file`);
+      }
+    } catch (error) {
+      console.error('Error loading blacklist:', error);
+    }
+  }
+
+  saveBlacklist() {
+    try {
+      const blacklistArray = Array.from(this.blacklist.entries()).map(([userId, data]) => ({
+        userId,
+        ...data
+      }));
+      fs.writeFileSync(this.blacklistFile, JSON.stringify(blacklistArray, null, 2));
+    } catch (error) {
+      console.error('Error saving blacklist:', error);
+    }
   }
 
   async checkUser(userId, username, content, guildMember) {
@@ -283,6 +321,9 @@ class SpamFilter {
       timestamp: Date.now()
     });
 
+    // Save to file
+    this.saveBlacklist();
+
     this.logSpamEvent(userId, username, '', 'blacklisted', {
       reason,
       blockedBy
@@ -295,6 +336,8 @@ class SpamFilter {
   removeFromBlacklist(userId) {
     const wasBlacklisted = this.blacklist.delete(userId);
     if (wasBlacklisted) {
+      // Save to file
+      this.saveBlacklist();
       console.log(`✅ User ${userId} removed from blacklist`);
     }
     return wasBlacklisted;

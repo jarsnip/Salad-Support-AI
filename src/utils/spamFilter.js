@@ -26,7 +26,16 @@ class SpamFilter {
     this.loadBlacklist();
 
     // Cleanup old data every 5 minutes
-    setInterval(() => this.cleanup(), 5 * 60 * 1000);
+    // Store interval reference for cleanup
+    this.cleanupInterval = setInterval(() => this.cleanup(), 5 * 60 * 1000);
+  }
+
+  // Method to stop spam filter and clean up resources
+  stop() {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = null;
+    }
   }
 
   loadBlacklist() {
@@ -49,13 +58,13 @@ class SpamFilter {
     }
   }
 
-  saveBlacklist() {
+  async saveBlacklist() {
     try {
       const blacklistArray = Array.from(this.blacklist.entries()).map(([userId, data]) => ({
         userId,
         ...data
       }));
-      fs.writeFileSync(this.blacklistFile, JSON.stringify(blacklistArray, null, 2));
+      await fs.promises.writeFile(this.blacklistFile, JSON.stringify(blacklistArray, null, 2));
     } catch (error) {
       console.error('Error saving blacklist:', error);
     }
@@ -96,11 +105,18 @@ class SpamFilter {
     // Check cooldown
     const cooldownCheck = this.checkCooldown(userId);
     if (!cooldownCheck.allowed) {
+      // Increment cooldown attempts (side effect moved from check method)
+      const activity = this.getUserActivity(userId);
+      activity.cooldownAttempts = (activity.cooldownAttempts || 0) + 1;
+
       // Only log spam and record violation if user has attempted 3+ times
-      if (cooldownCheck.details.attempts >= 3) {
+      if (activity.cooldownAttempts >= 3) {
         this.recordViolation(userId, username, cooldownCheck.reason);
-        this.logSpamEvent(userId, username, content, cooldownCheck.reason, { attempts: cooldownCheck.details.attempts });
+        this.logSpamEvent(userId, username, content, cooldownCheck.reason, { attempts: activity.cooldownAttempts });
       }
+
+      // Update the return object with incremented attempts
+      cooldownCheck.details.attempts = activity.cooldownAttempts;
       return cooldownCheck;
     }
 
@@ -198,19 +214,14 @@ class SpamFilter {
     if (activity.lastThreadTime && (now - activity.lastThreadTime) < this.cooldownPeriod) {
       const waitTime = Math.ceil((activity.lastThreadTime + this.cooldownPeriod - now) / 1000);
 
-      // Increment cooldown attempts counter
-      activity.cooldownAttempts = (activity.cooldownAttempts || 0) + 1;
-
+      // Return current attempts count without modifying (no side effects)
       return {
         allowed: false,
         reason: 'cooldown',
         message: `⏱️ Please wait ${waitTime} seconds before creating another support thread.`,
-        details: { waitTime, attempts: activity.cooldownAttempts }
+        details: { waitTime, attempts: activity.cooldownAttempts || 0 }
       };
     }
-
-    // Reset cooldown attempts when cooldown period passes
-    activity.cooldownAttempts = 0;
 
     return { allowed: true };
   }
@@ -277,6 +288,8 @@ class SpamFilter {
 
     activity.threads.push(now);
     activity.lastThreadTime = now;
+    // Reset cooldown attempts when thread is successfully created
+    activity.cooldownAttempts = 0;
   }
 
   recordMessage(userId, content) {
@@ -323,7 +336,7 @@ class SpamFilter {
     return wasBlocked;
   }
 
-  addToBlacklist(userId, username, reason, blockedBy) {
+  async addToBlacklist(userId, username, reason, blockedBy) {
     this.blacklist.set(userId, {
       username,
       reason: reason || 'No reason provided',
@@ -332,7 +345,7 @@ class SpamFilter {
     });
 
     // Save to file
-    this.saveBlacklist();
+    await this.saveBlacklist();
 
     this.logSpamEvent(userId, username, '', 'blacklisted', {
       reason,
@@ -343,11 +356,11 @@ class SpamFilter {
     return true;
   }
 
-  removeFromBlacklist(userId) {
+  async removeFromBlacklist(userId) {
     const wasBlacklisted = this.blacklist.delete(userId);
     if (wasBlacklisted) {
       // Save to file
-      this.saveBlacklist();
+      await this.saveBlacklist();
       console.log(`✅ User ${userId} removed from blacklist`);
     }
     return wasBlacklisted;

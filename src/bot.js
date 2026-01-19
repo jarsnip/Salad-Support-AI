@@ -30,18 +30,21 @@ class SupportBot extends EventEmitter {
       3
     );
 
+    // Store interval references for cleanup
+    this.intervals = [];
+
     this.setupEventHandlers();
 
     // Cleanup old conversations every hour
-    setInterval(() => {
+    this.intervals.push(setInterval(() => {
       this.conversationManager.cleanupOldConversations();
-    }, 60 * 60 * 1000);
+    }, 60 * 60 * 1000));
 
     // Check for inactive conversations every minute (if auto-end is enabled)
     if (config.autoEnd?.enabled) {
-      setInterval(() => {
+      this.intervals.push(setInterval(() => {
         this.checkInactiveConversations();
-      }, 60 * 1000);
+      }, 60 * 1000));
     }
   }
 
@@ -213,20 +216,21 @@ class SupportBot extends EventEmitter {
 
       console.log(`\n💬 Thread message from ${message.author.tag} in thread ${message.channel.id}`);
 
+      // Start typing indicator
       const typingInterval = setInterval(() => {
         message.channel.sendTyping().catch(() => {});
       }, 5000);
 
       message.channel.sendTyping().catch(() => {});
 
+      // Pass typing interval to queue item so it can be cleared when done
       this.messageQueue.add({
         threadId: message.channel.id,
         messageContent: message.content,
         userId: message.author.id,
-        username: message.author.username
+        username: message.author.username,
+        typingInterval: typingInterval // Will be cleared in processQueue finally block
       });
-
-      setTimeout(() => clearInterval(typingInterval), 30000);
 
     } catch (error) {
       console.error('Error handling thread message:', error);
@@ -394,7 +398,7 @@ class SupportBot extends EventEmitter {
         await channel.send(`Thank you for your feedback! ${feedbackType === 'positive' ? 'Glad we could help!' : 'A human agent will follow up with you shortly.'}`);
 
         // Mark conversation as ended
-        this.conversationManager.endConversation(channel.id);
+        await this.conversationManager.endConversation(channel.id);
 
         // Emit conversation ended event for dashboard
         this.emit('conversationEnded', {
@@ -498,7 +502,7 @@ class SupportBot extends EventEmitter {
       }
 
       // Add to blacklist
-      this.spamFilter.addToBlacklist(
+      await this.spamFilter.addToBlacklist(
         targetUser.id,
         targetUser.tag,
         reason,
@@ -562,7 +566,7 @@ class SupportBot extends EventEmitter {
       }
 
       // Remove from blacklist
-      this.spamFilter.removeFromBlacklist(targetUser.id);
+      await this.spamFilter.removeFromBlacklist(targetUser.id);
 
       await interaction.reply({
         content: `✅ User ${targetUser.tag} has been unblocked and can now create support threads.`,
@@ -641,7 +645,7 @@ class SupportBot extends EventEmitter {
           await thread.send(`Thank you for your feedback! ${feedbackType === 'positive' ? 'Glad we could help!' : 'A human agent will follow up with you shortly.'}`);
 
           // Mark conversation as ended
-          this.conversationManager.endConversation(threadId);
+          await this.conversationManager.endConversation(threadId);
 
           // Emit conversation ended event for dashboard
           this.emit('conversationEnded', {
@@ -683,7 +687,7 @@ class SupportBot extends EventEmitter {
             await thread.send('No feedback received. This conversation has been closed due to inactivity.');
 
             // Mark conversation as ended
-            this.conversationManager.endConversation(threadId);
+            await this.conversationManager.endConversation(threadId);
 
             // Emit conversation ended event for dashboard
             this.emit('conversationEnded', {
@@ -870,7 +874,7 @@ class SupportBot extends EventEmitter {
         await thread.send(`Thank you for your feedback! ${feedbackType === 'positive' ? 'Glad we could help!' : 'A human agent will follow up with you shortly.'}`);
 
         // Mark conversation as ended
-        this.conversationManager.endConversation(threadIdString);
+        await this.conversationManager.endConversation(threadIdString);
 
         // Emit conversation ended event for dashboard
         this.emit('conversationEnded', {
@@ -952,6 +956,18 @@ class SupportBot extends EventEmitter {
 
   async stop() {
     console.log('Stopping bot...');
+
+    // Clear all intervals to prevent memory leaks
+    if (this.intervals) {
+      this.intervals.forEach(interval => clearInterval(interval));
+      this.intervals = [];
+    }
+
+    // Stop spam filter cleanup interval
+    if (this.spamFilter) {
+      this.spamFilter.stop();
+    }
+
     this.client.destroy();
   }
 }

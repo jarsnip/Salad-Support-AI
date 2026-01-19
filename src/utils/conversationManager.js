@@ -26,12 +26,12 @@ class ConversationManager {
     return this.conversations.get(threadId);
   }
 
-  endConversation(threadId) {
+  async endConversation(threadId) {
     const conversation = this.getConversation(threadId);
 
     // Save transcript before marking as ended
     if (!conversation.ended && conversation.messages.length > 0) {
-      this.transcriptManager.saveTranscript(conversation);
+      await this.transcriptManager.saveTranscript(conversation);
     }
 
     conversation.ended = true;
@@ -156,8 +156,23 @@ class ConversationManager {
     };
   }
 
-  generateHTMLTranscript(threadId) {
-    const conversation = this.getConversation(threadId);
+  generateHTMLTranscript(threadIdOrConversation) {
+    // Support both threadId (string) and conversation object
+    let conversation;
+    let threadId;
+
+    if (typeof threadIdOrConversation === 'string') {
+      // It's a threadId, get the conversation
+      threadId = threadIdOrConversation;
+      conversation = this.getConversation(threadId);
+    } else if (typeof threadIdOrConversation === 'object') {
+      // It's a conversation object (from saved transcript)
+      conversation = threadIdOrConversation;
+      threadId = conversation.threadId;
+    } else {
+      return null;
+    }
+
     if (!conversation || conversation.messages.length === 0) {
       return null;
     }

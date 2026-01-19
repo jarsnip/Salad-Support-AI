@@ -723,40 +723,81 @@ class SupportBot extends EventEmitter {
 
       console.log(`🛑 Ending conversation from dashboard: ${threadId}`);
 
-      // Mark conversation as ended
-      this.conversationManager.endConversation(threadId);
+      // Send feedback request message
+      const feedbackMessage = await thread.send(
+        '👋 Thank you for using our support! Please provide feedback by reacting to this message:\n👍 if your issue was resolved\n👎 if you need more help'
+      );
 
-      // Emit conversation ended event for dashboard
-      this.emit('conversationEnded', {
-        threadId: threadId,
-        reason: 'dashboard',
-        timestamp: Date.now()
+      await feedbackMessage.react('👍');
+      await feedbackMessage.react('👎');
+
+      const filter = (reaction, user) => {
+        return ['👍', '👎'].includes(reaction.emoji.name) && !user.bot;
+      };
+
+      const collector = feedbackMessage.createReactionCollector({
+        filter,
+        time: 60000,
+        max: 1
       });
 
-      // Send transcript if enabled
-      if (this.config.autoEnd?.sendTranscripts && conversation.originalPosterId) {
-        await this.sendTranscriptDM(threadId, conversation.originalPosterId);
-      }
+      collector.on('collect', async (reaction, user) => {
+        const feedbackType = reaction.emoji.name === '👍' ? 'positive' : 'negative';
 
-      // Send message to thread
-      await thread.send('🛑 This conversation has been closed by support staff. A transcript has been sent to your DMs. Thank you for reaching out!');
+        console.log(`📊 Feedback received: ${feedbackType} from ${user.tag} in thread ${threadId}`);
 
-      // Lock and archive thread
-      await thread.setLocked(true);
-      await thread.setArchived(true);
+        this.emit('feedbackReceived', {
+          threadId: threadId,
+          userId: user.id,
+          username: user.tag,
+          type: feedbackType,
+          timestamp: Date.now()
+        });
 
-      console.log(`🔒 Thread ${threadId} has been locked and archived from dashboard`);
+        await thread.send(`Thank you for your feedback! ${feedbackType === 'positive' ? 'Glad we could help!' : 'A human agent will follow up with you shortly.'}`);
 
-      // Schedule thread deletion
-      const deleteTimeout = this.config.autoEnd?.threadDeleteAfterEnd || 300000;
-      setTimeout(async () => {
-        try {
-          await thread.delete();
-          console.log(`🗑️  Thread ${threadId} deleted after dashboard end`);
-        } catch (err) {
-          console.error(`Error deleting thread ${threadId}:`, err);
+        // Mark conversation as ended
+        this.conversationManager.endConversation(threadId);
+
+        // Emit conversation ended event for dashboard
+        this.emit('conversationEnded', {
+          threadId: threadId,
+          reason: 'dashboard',
+          timestamp: Date.now()
+        });
+
+        // Send transcript if enabled
+        if (this.config.autoEnd?.sendTranscripts && conversation.originalPosterId) {
+          await this.sendTranscriptDM(threadId, conversation.originalPosterId);
         }
-      }, deleteTimeout);
+
+        // If negative feedback and follow-up channel configured, notify support team
+        if (feedbackType === 'negative' && this.config.negativeFeedbackChannelId) {
+          await this.sendNegativeFeedbackAlert(threadId, user);
+        }
+
+        await thread.setLocked(true);
+        await thread.setArchived(true);
+
+        console.log(`🔒 Thread ${threadId} has been locked and archived from dashboard`);
+
+        // Schedule thread deletion after feedback
+        const deleteTimeout = this.config.autoEnd?.threadDeleteAfterFeedback || 120000; // Default 2 minutes
+        setTimeout(async () => {
+          try {
+            await thread.delete();
+            console.log(`🗑️  Thread ${threadId} deleted after dashboard end`);
+          } catch (err) {
+            console.error(`Error deleting thread ${threadId}:`, err);
+          }
+        }, deleteTimeout);
+      });
+
+      collector.on('end', async (collected) => {
+        if (collected.size === 0) {
+          await thread.send('No feedback received. Thread will remain open.');
+        }
+      });
 
     } catch (error) {
       console.error(`Error ending conversation from dashboard ${threadId}:`, error);

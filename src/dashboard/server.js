@@ -233,28 +233,6 @@ export class DashboardServer {
       }
     });
 
-    // API endpoint to get a specific transcript
-    this.app.get('/api/transcripts/:threadId', (req, res) => {
-      try {
-        const { threadId } = req.params;
-
-        if (!threadId) {
-          return res.status(400).send('threadId is required');
-        }
-
-        const transcript = this.bot.conversationManager.getTranscript(threadId);
-
-        if (!transcript) {
-          return res.status(404).send('Transcript not found');
-        }
-
-        res.json(transcript);
-      } catch (error) {
-        console.error('Error getting transcript:', error);
-        res.status(500).send('Internal server error');
-      }
-    });
-
     // API endpoint to download all transcripts as a zip file
     // IMPORTANT: This must be defined BEFORE the :threadId routes to avoid matching "download-all" as a threadId
     this.app.get('/api/transcripts/download-all', (req, res) => {
@@ -313,6 +291,17 @@ export class DashboardServer {
       }
     });
 
+    // API endpoint to get transcript stats
+    this.app.get('/api/transcripts/stats', (req, res) => {
+      try {
+        const stats = this.bot.conversationManager.getTranscriptStats();
+        res.json(stats);
+      } catch (error) {
+        console.error('Error getting transcript stats:', error);
+        res.status(500).send('Internal server error');
+      }
+    });
+
     // API endpoint to download transcript as HTML
     this.app.get('/api/transcripts/:threadId/download', (req, res) => {
       try {
@@ -354,6 +343,28 @@ export class DashboardServer {
       }
     });
 
+    // API endpoint to get a specific transcript
+    this.app.get('/api/transcripts/:threadId', (req, res) => {
+      try {
+        const { threadId } = req.params;
+
+        if (!threadId) {
+          return res.status(400).send('threadId is required');
+        }
+
+        const transcript = this.bot.conversationManager.getTranscript(threadId);
+
+        if (!transcript) {
+          return res.status(404).send('Transcript not found');
+        }
+
+        res.json(transcript);
+      } catch (error) {
+        console.error('Error getting transcript:', error);
+        res.status(500).send('Internal server error');
+      }
+    });
+
     // API endpoint to delete a transcript
     this.app.delete('/api/transcripts/:threadId', (req, res) => {
       try {
@@ -372,17 +383,6 @@ export class DashboardServer {
         res.json({ success: true, message: 'Transcript deleted successfully' });
       } catch (error) {
         console.error('Error deleting transcript:', error);
-        res.status(500).send('Internal server error');
-      }
-    });
-
-    // API endpoint to get transcript stats
-    this.app.get('/api/transcripts/stats', (req, res) => {
-      try {
-        const stats = this.bot.conversationManager.getTranscriptStats();
-        res.json(stats);
-      } catch (error) {
-        console.error('Error getting transcript stats:', error);
         res.status(500).send('Internal server error');
       }
     });

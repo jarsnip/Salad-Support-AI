@@ -2,7 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import docsManager from '../utils/docsManager.js';
 
 class AIService {
-  constructor(apiKey, model = 'claude-3-5-haiku-20241022') {
+  constructor(apiKey, model = 'claude-haiku-4-5-20251001') {
     this.client = new Anthropic({
       apiKey: apiKey
     });

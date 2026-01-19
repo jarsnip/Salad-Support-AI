@@ -2433,59 +2433,66 @@
                 return;
             }
 
-            const width = 100;
-            const height = 40;
-            const padding = { top: 8, right: 5, bottom: 5, left: 5 };
-            const graphWidth = width - padding.left - padding.right;
-            const graphHeight = height - padding.top - padding.bottom;
+            // Use pixel-based dimensions for easier calculation
+            const containerWidth = feedbackGraphDiv.offsetWidth || 800;
+            const padding = { top: 20, right: 20, bottom: 50, left: 20 };
+            const chartWidth = containerWidth - padding.left - padding.right;
+            const chartHeight = 100;
 
             const values = dailyData.map(d => d.overall);
-            const maxValue = Math.max(...values, 0);
-            const minValue = Math.min(...values, 0);
-            const range = maxValue - minValue || 1;
+            const maxValue = Math.max(...values, 5); // Minimum range of 5
+            const minValue = Math.min(...values, -5);
+            const range = maxValue - minValue || 10;
 
+            // Calculate point positions
             const points = dailyData.map((day, i) => {
-                const x = padding.left + (i / (dailyData.length - 1)) * graphWidth;
-                const y = padding.top + ((maxValue - day.overall) / range) * graphHeight;
+                const x = padding.left + (i / Math.max(1, dailyData.length - 1)) * chartWidth;
+                const y = padding.top + ((maxValue - day.overall) / range) * chartHeight;
                 return { x, y, ...day };
             });
 
+            // Create SVG path for line
             const linePath = points.map((p, i) =>
                 `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`
             ).join(' ');
 
-            const zeroY = padding.top + (maxValue / range) * graphHeight;
+            // Zero line position
+            const zeroY = padding.top + (maxValue / range) * chartHeight;
+
+            const svgHeight = chartHeight + padding.top + padding.bottom;
 
             feedbackGraphDiv.innerHTML = `
-                <div style="max-height: 200px; display: flex; flex-direction: column; gap: 4px;">
-                    <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="xMidYMid meet" style="width: 100%; height: 120px;">
-                        ${[0, 25, 50, 75, 100].map(percent => {
-                            const y = padding.top + (percent / 100) * graphHeight;
-                            return `<line class="graph-grid-line" x1="${padding.left}" y1="${y}" x2="${width - padding.right}" y2="${y}" />`;
+                <div style="width: 100%; overflow-x: auto;">
+                    <svg width="${containerWidth}" height="${svgHeight}" style="display: block;">
+                        <!-- Grid lines -->
+                        ${[0, 0.25, 0.5, 0.75, 1].map(fraction => {
+                            const y = padding.top + fraction * chartHeight;
+                            return `<line x1="${padding.left}" y1="${y}" x2="${padding.left + chartWidth}" y2="${y}" stroke="var(--border-color)" stroke-width="1" opacity="0.3" stroke-dasharray="3,3" />`;
                         }).join('')}
 
-                        ${minValue < 0 ? `<line class="zero-line" x1="${padding.left}" y1="${zeroY}" x2="${width - padding.right}" y2="${zeroY}" />` : ''}
+                        <!-- Zero line -->
+                        ${minValue < 0 ? `<line x1="${padding.left}" y1="${zeroY}" x2="${padding.left + chartWidth}" y2="${zeroY}" stroke="var(--muted-text)" stroke-width="1.5" stroke-dasharray="5,5" opacity="0.5" />` : ''}
 
-                        <path class="graph-line" d="${linePath}" />
+                        <!-- Line path -->
+                        <path d="${linePath}" fill="none" stroke="var(--accent-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
 
+                        <!-- Data points -->
                         ${points.map(p => `
-                            <circle class="graph-point ${p.overall < 0 ? 'negative' : ''}"
-                                    cx="${p.x}" cy="${p.y}" r="1.5">
+                            <circle cx="${p.x}" cy="${p.y}" r="4" fill="${p.overall < 0 ? 'var(--negative-color)' : 'var(--accent-color)'}" stroke="var(--card-bg)" stroke-width="2" style="cursor: pointer;">
                                 <title>${p.date}: ${p.overall >= 0 ? '+' : ''}${p.overall} (👍${p.positive} 👎${p.negative})</title>
                             </circle>
                         `).join('')}
-                    </svg>
 
-                    <div style="position: relative; height: 35px;">
-                        ${points.map(p => {
-                            const leftPercent = p.x;
-                            return `
-                            <div style="position: absolute; left: ${leftPercent}%; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; font-size: 10px; color: var(--muted-text);">
-                                <span style="font-weight: 600; color: ${p.overall < 0 ? 'var(--negative-color)' : 'var(--accent-color)'};">${p.overall >= 0 ? '+' : ''}${p.overall}</span>
-                                <span style="font-size: 9px; white-space: nowrap;">${p.date}</span>
-                            </div>
-                        `}).join('')}
-                    </div>
+                        <!-- Labels -->
+                        ${points.map(p => `
+                            <text x="${p.x}" y="${padding.top + chartHeight + 15}" text-anchor="middle" fill="${p.overall < 0 ? 'var(--negative-color)' : 'var(--accent-color)'}" font-size="13" font-weight="600">
+                                ${p.overall >= 0 ? '+' : ''}${p.overall}
+                            </text>
+                            <text x="${p.x}" y="${padding.top + chartHeight + 30}" text-anchor="middle" fill="var(--muted-text)" font-size="11">
+                                ${p.date}
+                            </text>
+                        `).join('')}
+                    </svg>
                 </div>
             `;
         }

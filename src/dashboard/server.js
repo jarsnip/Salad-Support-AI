@@ -256,7 +256,9 @@ export class DashboardServer {
           threadId: transcript.threadId,
           originalPosterUsername: transcript.originalPosterUsername,
           createdAt: transcript.createdAt,
-          messages: transcript.messages
+          lastActivity: transcript.endedAt || Date.now(),
+          messages: transcript.messages,
+          feedback: transcript.feedback || null
         };
 
         const html = this.bot.conversationManager.generateHTMLTranscript(conversationObj);

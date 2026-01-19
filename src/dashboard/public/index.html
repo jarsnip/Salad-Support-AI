@@ -110,6 +110,37 @@
             transform: translateX(-280px);
         }
 
+        .sidebar-reopen-btn {
+            position: fixed;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: var(--accent-color);
+            color: var(--button-primary-text);
+            border: none;
+            border-radius: 0 8px 8px 0;
+            width: 40px;
+            height: 60px;
+            cursor: pointer;
+            font-size: 1.5em;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+            transition: all 0.2s;
+        }
+
+        .sidebar.collapsed ~ .sidebar-reopen-btn {
+            display: flex;
+        }
+
+        .sidebar-reopen-btn:hover {
+            width: 50px;
+            background: var(--accent-color);
+            opacity: 0.9;
+        }
+
         .sidebar-header {
             padding: 25px 20px;
             border-bottom: 1px solid var(--panel-border);
@@ -439,6 +470,7 @@
             border-radius: 12px;
             font-size: 0.8em;
             font-weight: 600;
+            text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
         }
 
         .conversation-time {
@@ -1336,6 +1368,7 @@
         .docs-tree-item.selected {
             background: var(--accent-color);
             color: white;
+            text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
         }
 
         .docs-tree-folder {
@@ -1427,6 +1460,7 @@
         .btn-primary {
             background: var(--accent-color);
             color: white;
+            text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
         }
 
         .btn-primary:hover {
@@ -1574,6 +1608,7 @@
             background: var(--accent-color);
             color: white;
             border-color: var(--accent-color);
+            text-shadow: 0 0 3px rgba(0, 0, 0, 0.8);
         }
 
         .config-field-checkbox {
@@ -1600,9 +1635,17 @@
         </div>
 
         <nav class="sidebar-nav">
-            <div class="nav-item active" onclick="switchView('live')" data-view="live">
+            <div class="nav-item active" onclick="switchView('home')" data-view="home">
+                <span class="nav-icon">🏠</span>
+                <span>Home</span>
+            </div>
+            <div class="nav-item" onclick="switchView('live')" data-view="live">
                 <span class="nav-icon">💬</span>
                 <span>Live Conversations</span>
+            </div>
+            <div class="nav-item" onclick="switchView('feedback')" data-view="feedback">
+                <span class="nav-icon">👍</span>
+                <span>Feedback</span>
             </div>
             <div class="nav-item" onclick="switchView('transcripts')" data-view="transcripts">
                 <span class="nav-icon">📜</span>
@@ -1630,6 +1673,9 @@
         </div>
     </div>
 
+    <!-- Sidebar Reopen Button -->
+    <button class="sidebar-reopen-btn" onclick="toggleSidebar()" title="Open sidebar">▶</button>
+
     <!-- Main Content -->
     <div class="main-content" id="mainContent">
         <!-- Mobile Header -->
@@ -1639,54 +1685,81 @@
             <div></div>
         </div>
 
-        <!-- Live Conversations View -->
-        <div class="view-container active" id="view-live">
+        <!-- Home View -->
+        <div class="view-container active" id="view-home">
             <div class="container">
                 <div class="page-header">
-                    <h1 class="page-title">Live Conversations</h1>
-                    <p class="page-subtitle">Monitor active support conversations in real-time</p>
+                    <h1 class="page-title">Dashboard Overview</h1>
+                    <p class="page-subtitle">Quick glance at system status and statistics</p>
                 </div>
 
                 <div class="stats-grid">
                     <div class="stat-card">
-                        <div class="stat-value" id="activeConversations">0</div>
+                        <div class="stat-value" id="homeUptime">--</div>
+                        <div class="stat-label">Bot Uptime</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="homeActiveConvos">0</div>
                         <div class="stat-label">Active Conversations</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-value" id="totalMessages">0</div>
-                        <div class="stat-label">Total Messages</div>
+                        <div class="stat-value" id="homeTotalConvos">0</div>
+                        <div class="stat-label">Total Conversations</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-value" id="spamCount">0</div>
-                        <div class="stat-label">Spam Blocked</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="bannedCount">0</div>
+                        <div class="stat-value" id="homeTempBanned">0</div>
                         <div class="stat-label">Temp Banned</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-value" id="blacklistCount">0</div>
+                        <div class="stat-value" id="homeBlacklisted">0</div>
                         <div class="stat-label">Blacklisted</div>
                     </div>
                 </div>
 
                 <div class="content-grid">
                     <div class="panel">
-                        <h2>💬 Active Threads</h2>
-                        <div id="conversations">
-                            <div class="empty-state">No active conversations</div>
+                        <h2>⏱️ Temporary Bans</h2>
+                        <div id="homeBanned">
+                            <div class="empty-state">No temporarily banned users</div>
                         </div>
                     </div>
 
                     <div class="panel">
-                        <div class="panel-header">
-                            <h2>⚠️ Recent Errors</h2>
-                            <button class="clear-all-btn" onclick="clearAllErrors()">Clear All</button>
-                        </div>
-                        <div id="errors">
-                            <div class="empty-state">No errors</div>
+                        <h2>🚫 Spam Detection</h2>
+                        <div id="homeSpam">
+                            <div class="empty-state">No spam detected</div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Live Conversations View -->
+        <div class="view-container" id="view-live">
+            <div class="container">
+                <div class="page-header">
+                    <h1 class="page-title">Live Conversations</h1>
+                    <p class="page-subtitle">Monitor and manage active support conversations in real-time</p>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2>💬 Active Threads (<span id="liveConvoCount">0</span>)</h2>
+                        <button class="btn-primary" onclick="fetchConversations()">🔄 Refresh</button>
+                    </div>
+                    <div id="conversations">
+                        <div class="empty-state">No active conversations</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feedback View -->
+        <div class="view-container" id="view-feedback">
+            <div class="container">
+                <div class="page-header">
+                    <h1 class="page-title">Feedback Analytics</h1>
+                    <p class="page-subtitle">View user feedback trends and sentiment over time</p>
                 </div>
 
                 <div class="panel">
@@ -1700,23 +1773,6 @@
                     <h2>📊 Feedback Over Time (Last 10 Days)</h2>
                     <div id="feedbackGraph">
                         <div class="empty-state">Loading feedback data...</div>
-                    </div>
-                </div>
-
-                <div class="panel">
-                    <div class="panel-header">
-                        <h2>🚫 Spam Detection</h2>
-                        <button class="clear-all-btn" onclick="clearAllSpam()">Clear All</button>
-                    </div>
-                    <div id="spam">
-                        <div class="empty-state">No spam detected</div>
-                    </div>
-                </div>
-
-                <div class="panel">
-                    <h2>⏱️ Temporary Bans</h2>
-                    <div id="banned">
-                        <div class="empty-state">No temporarily banned users</div>
                     </div>
                 </div>
             </div>
@@ -1981,7 +2037,13 @@
             window.location.hash = viewName;
 
             // Load data for specific views
-            if (viewName === 'transcripts') {
+            if (viewName === 'home') {
+                loadHomeView();
+            } else if (viewName === 'live') {
+                fetchConversations();
+            } else if (viewName === 'feedback') {
+                loadFeedbackView();
+            } else if (viewName === 'transcripts') {
                 loadTranscripts();
             } else if (viewName === 'blacklist') {
                 fetchBlacklist();
@@ -2014,8 +2076,10 @@
         // Handle hash navigation
         function handleHashChange() {
             const hash = window.location.hash.slice(1);
-            if (hash && ['live', 'transcripts', 'blacklist', 'documentation', 'configuration'].includes(hash)) {
+            if (hash && ['home', 'live', 'feedback', 'transcripts', 'blacklist', 'documentation', 'configuration'].includes(hash)) {
                 switchView(hash);
+            } else if (!hash) {
+                switchView('home');
             }
         }
 
@@ -2095,11 +2159,20 @@
         }
 
         function updateStats(stats) {
-            document.getElementById('activeConversations').textContent = stats.activeConversations || 0;
-            document.getElementById('totalMessages').textContent = stats.totalMessages || 0;
-            document.getElementById('spamCount').textContent = stats.spam || 0;
-            document.getElementById('bannedCount').textContent = stats.banned || 0;
-            document.getElementById('blacklistCount').textContent = stats.blacklisted || 0;
+            // Update home view stats
+            const homeActiveConvos = document.getElementById('homeActiveConvos');
+            const homeTotalConvos = document.getElementById('homeTotalConvos');
+            const homeTempBanned = document.getElementById('homeTempBanned');
+            const homeBlacklisted = document.getElementById('homeBlacklisted');
+
+            if (homeActiveConvos) homeActiveConvos.textContent = stats.activeConversations || 0;
+            if (homeTotalConvos) homeTotalConvos.textContent = stats.totalMessages || 0;
+            if (homeTempBanned) homeTempBanned.textContent = stats.banned || 0;
+            if (homeBlacklisted) homeBlacklisted.textContent = stats.blacklisted || 0;
+
+            // Update live view count
+            const liveConvoCount = document.getElementById('liveConvoCount');
+            if (liveConvoCount) liveConvoCount.textContent = stats.activeConversations || 0;
         }
 
         function updateConversations(conversations) {
@@ -2210,8 +2283,27 @@
         function updateSpam(spam) {
             const filteredSpam = spam ? spam.filter(sp => sp.reason !== 'blacklisted') : [];
 
+            // Update home view spam
+            const homeSpamDiv = document.getElementById('homeSpam');
+            if (homeSpamDiv) {
+                if (!filteredSpam || filteredSpam.length === 0) {
+                    homeSpamDiv.innerHTML = '<div class="empty-state">No spam detected</div>';
+                } else {
+                    const recentHomeSpam = filteredSpam.slice(-5);
+                    homeSpamDiv.innerHTML = recentHomeSpam.map(sp => `
+                        <div class="spam-item" style="margin-bottom: 10px;">
+                            <div class="spam-header">
+                                <span class="spam-username">${escapeHtml(sp.username)}</span>
+                                <span class="spam-reason">${sp.reason.replace(/_/g, ' ')}</span>
+                            </div>
+                            <div class="spam-time">${formatTime(sp.timestamp)}</div>
+                        </div>
+                    `).join('');
+                }
+            }
+
             if (!filteredSpam || filteredSpam.length === 0) {
-                spamDiv.innerHTML = '<div class="empty-state">No spam detected</div>';
+                if (spamDiv) spamDiv.innerHTML = '<div class="empty-state">No spam detected</div>';
                 return;
             }
 
@@ -2250,8 +2342,28 @@
         }
 
         function updateBanned(banned) {
+            // Update home view banned
+            const homeBannedDiv = document.getElementById('homeBanned');
+            if (homeBannedDiv) {
+                if (!banned || banned.length === 0) {
+                    homeBannedDiv.innerHTML = '<div class="empty-state">No temporarily banned users</div>';
+                } else {
+                    homeBannedDiv.innerHTML = banned.slice(0, 5).map(ban => {
+                        const remainingMinutes = Math.ceil(ban.remainingMs / 60000);
+                        return `
+                            <div class="banned-item" style="margin-bottom: 10px;">
+                                <div class="banned-header">
+                                    <span class="banned-username">⏱️ ${escapeHtml(ban.username)}</span>
+                                    <span class="banned-timer">${remainingMinutes}m left</span>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            }
+
             if (!banned || banned.length === 0) {
-                bannedDiv.innerHTML = '<div class="empty-state">No temporarily banned users</div>';
+                if (bannedDiv) bannedDiv.innerHTML = '<div class="empty-state">No temporarily banned users</div>';
                 return;
             }
 
@@ -3010,6 +3122,34 @@
                 console.error('Error saving configuration:', error);
                 alert('Failed to save configuration');
             }
+        }
+
+        // ===== HOME VIEW FUNCTIONS =====
+
+        let botStartTime = Date.now();
+
+        function loadHomeView() {
+            // Update bot uptime
+            updateUptime();
+            setInterval(updateUptime, 60000); // Update every minute
+
+            // Fetch all stats
+            fetchStats();
+            fetchSpam();
+            fetchBanned();
+        }
+
+        function updateUptime() {
+            const uptimeMs = Date.now() - botStartTime;
+            const hours = Math.floor(uptimeMs / 3600000);
+            const minutes = Math.floor((uptimeMs % 3600000) / 60000);
+            document.getElementById('homeUptime').textContent = `${hours}h ${minutes}m`;
+        }
+
+        // ===== FEEDBACK VIEW FUNCTIONS =====
+
+        function loadFeedbackView() {
+            fetchFeedback();
         }
 
         // API Calls

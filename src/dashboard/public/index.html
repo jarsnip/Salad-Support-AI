@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Salad Support AI - Live Dashboard</title>
+    <title>Salad Support AI - Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -35,6 +35,11 @@
             --status-offline: #dc3545;
             --positive-color: #90FF75;
             --negative-color: #f87171;
+            --sidebar-bg: white;
+            --sidebar-text: #333;
+            --sidebar-hover: #f0f0f0;
+            --sidebar-active: #90FF75;
+            --sidebar-active-text: #1a1a2e;
         }
 
         [data-theme="dark"] {
@@ -64,6 +69,11 @@
             --status-offline: #dc3545;
             --positive-color: #90FF75;
             --negative-color: #f87171;
+            --sidebar-bg: #1e2438;
+            --sidebar-text: #e0e0e0;
+            --sidebar-hover: #252b48;
+            --sidebar-active: #90FF75;
+            --sidebar-active-text: #1a1a2e;
         }
 
         * {
@@ -78,7 +88,168 @@
             background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
             color: var(--text-color);
             min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 280px;
+            height: 100vh;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--panel-border);
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+            transition: transform 0.3s ease, width 0.3s ease;
+        }
+
+        .sidebar.collapsed {
+            transform: translateX(-280px);
+        }
+
+        .sidebar-header {
+            padding: 25px 20px;
+            border-bottom: 1px solid var(--panel-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.3em;
+            font-weight: 700;
+            color: var(--heading-color);
+        }
+
+        .sidebar-toggle {
+            background: var(--accent-color);
+            color: var(--button-primary-text);
+            border: none;
+            border-radius: 6px;
+            width: 36px;
+            height: 36px;
+            cursor: pointer;
+            font-size: 1.2em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .sidebar-toggle:hover {
+            background: var(--accent-hover);
+            transform: scale(1.05);
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px 0;
+        }
+
+        .nav-item {
+            padding: 14px 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: var(--sidebar-text);
+            font-weight: 500;
+            font-size: 0.95em;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-item:hover {
+            background: var(--sidebar-hover);
+            border-left-color: var(--accent-color);
+        }
+
+        .nav-item.active {
+            background: var(--sidebar-active);
+            color: var(--sidebar-active-text);
+            border-left-color: var(--sidebar-active);
+            font-weight: 700;
+        }
+
+        .nav-item .nav-icon {
+            font-size: 1.3em;
+            width: 24px;
+            text-align: center;
+        }
+
+        .sidebar-footer {
             padding: 20px;
+            border-top: 1px solid var(--panel-border);
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-color);
+            font-size: 0.85em;
+            padding: 10px;
+            background: var(--card-bg);
+            border-radius: 8px;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            margin-left: 280px;
+            padding: 20px;
+            min-height: 100vh;
+            transition: margin-left 0.3s ease;
+        }
+
+        .main-content.expanded {
+            margin-left: 0;
+        }
+
+        .mobile-header {
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: var(--panel-bg);
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .mobile-menu-btn {
+            background: var(--accent-color);
+            color: var(--button-primary-text);
+            border: none;
+            border-radius: 6px;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            font-size: 1.3em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .mobile-title {
+            font-size: 1.2em;
+            font-weight: 700;
+            color: var(--heading-color);
+        }
+
+        /* View Container */
+        .view-container {
+            display: none;
+        }
+
+        .view-container.active {
+            display: block;
         }
 
         .container {
@@ -86,12 +257,19 @@
             margin: 0 auto;
         }
 
-        h1 {
-            color: var(--heading-color);
-            text-align: center;
+        .page-header {
             margin-bottom: 30px;
-            font-size: 2.5em;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .page-title {
+            color: var(--heading-color);
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .page-subtitle {
+            color: var(--muted-text);
+            font-size: 0.95em;
         }
 
         .theme-toggle {
@@ -107,7 +285,7 @@
             font-size: 1.5em;
             cursor: pointer;
             box-shadow: 0 4px 12px rgba(144, 255, 117, 0.3);
-            z-index: 1000;
+            z-index: 1001;
         }
 
         .theme-toggle:hover {
@@ -304,6 +482,8 @@
             color: var(--text-color);
             font-size: 0.9em;
             line-height: 1.5;
+            white-space: pre-wrap;
+            word-wrap: break-word;
         }
 
         .error-item {
@@ -680,13 +860,6 @@
             }
         }
 
-        .connection-status {
-            text-align: center;
-            color: var(--text-color);
-            margin-bottom: 20px;
-            font-size: 0.9em;
-        }
-
         .empty-state {
             text-align: center;
             color: var(--muted-text);
@@ -708,6 +881,7 @@
             font-weight: 600;
             box-shadow: 0 4px 12px rgba(144, 255, 117, 0.4);
             transition: all 0.2s;
+            z-index: 999;
         }
 
         .auto-scroll-toggle:hover {
@@ -809,7 +983,265 @@
             opacity: 0.5;
         }
 
+        /* Transcript History Styles */
+        .transcript-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 250px;
+            max-width: 400px;
+        }
+
+        .search-box input {
+            width: 100%;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 0.95em;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+        }
+
+        .transcript-item {
+            background: var(--card-bg);
+            border-left: 4px solid #667eea;
+            padding: 18px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .transcript-item:hover {
+            background: var(--panel-bg);
+            transform: translateX(5px);
+        }
+
+        .transcript-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .transcript-id {
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .transcript-date {
+            color: var(--muted-text);
+            font-size: 0.85em;
+        }
+
+        .transcript-info {
+            display: flex;
+            gap: 15px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .transcript-badge {
+            background: var(--accent-color);
+            color: var(--button-primary-text);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: 600;
+        }
+
+        .transcript-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .btn-secondary {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background: #5568d3;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .pagination button {
+            background: var(--accent-color);
+            color: var(--button-primary-text);
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            background: var(--accent-hover);
+        }
+
+        .pagination button:disabled {
+            background: #4b5563;
+            color: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .pagination span {
+            color: var(--muted-text);
+            font-size: 0.9em;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--panel-bg);
+            border-radius: 12px;
+            max-width: 900px;
+            width: 100%;
+            max-height: 90vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+
+        .modal-header {
+            padding: 20px 25px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: var(--heading-color);
+        }
+
+        .modal-close {
+            background: var(--button-danger-bg);
+            color: white;
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            background: #dc2626;
+            transform: scale(1.1);
+        }
+
+        .modal-body {
+            padding: 25px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .modal-footer {
+            padding: 20px 25px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        /* Placeholder View Styles */
+        .placeholder-view {
+            text-align: center;
+            padding: 80px 40px;
+        }
+
+        .placeholder-icon {
+            font-size: 5em;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .placeholder-title {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: var(--heading-color);
+            margin-bottom: 15px;
+        }
+
+        .placeholder-text {
+            color: var(--muted-text);
+            font-size: 1.1em;
+        }
+
+        /* Mobile Responsiveness */
         @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-280px);
+            }
+
+            .sidebar.mobile-open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .mobile-header {
+                display: flex;
+            }
+
             .content-grid {
                 grid-template-columns: 1fr;
             }
@@ -818,112 +1250,288 @@
                 height: 200px;
                 padding: 15px;
             }
+
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            }
+
+            .theme-toggle {
+                top: 15px;
+                right: 15px;
+                width: 45px;
+                height: 45px;
+            }
+
+            .auto-scroll-toggle {
+                bottom: 20px;
+                right: 20px;
+                padding: 12px 20px;
+                font-size: 0.9em;
+            }
+
+            .transcript-header {
+                flex-direction: column;
+            }
+
+            .search-box {
+                max-width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid .stat-card {
+                min-width: 100px;
+            }
+
+            .stat-value {
+                font-size: 2em;
+            }
+
+            .page-title {
+                font-size: 1.5em;
+            }
         }
     </style>
 </head>
 <body>
     <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌓</button>
 
-    <div class="container">
-        <h1>🥗 Salad Support AI - Live Dashboard</h1>
-
-        <div class="connection-status">
-            <span class="status-indicator" id="statusIndicator"></span>
-            <span id="statusText">Connecting...</span>
+    <!-- Sidebar -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">🥗 Salad AI</div>
+            <button class="sidebar-toggle" onclick="toggleSidebar()">☰</button>
         </div>
 
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-value" id="activeConversations">0</div>
-                <div class="stat-label">Active Conversations</div>
+        <nav class="sidebar-nav">
+            <div class="nav-item active" onclick="switchView('live')" data-view="live">
+                <span class="nav-icon">💬</span>
+                <span>Live Conversations</span>
             </div>
-            <div class="stat-card">
-                <div class="stat-value" id="totalMessages">0</div>
-                <div class="stat-label">Total Messages</div>
+            <div class="nav-item" onclick="switchView('transcripts')" data-view="transcripts">
+                <span class="nav-icon">📜</span>
+                <span>Transcript History</span>
             </div>
-            <div class="stat-card">
-                <div class="stat-value" id="spamCount">0</div>
-                <div class="stat-label">Spam Blocked</div>
+            <div class="nav-item" onclick="switchView('blacklist')" data-view="blacklist">
+                <span class="nav-icon">🔨</span>
+                <span>Blacklisted Users</span>
             </div>
-            <div class="stat-card">
-                <div class="stat-value" id="bannedCount">0</div>
-                <div class="stat-label">Temp Banned</div>
+            <div class="nav-item" onclick="switchView('documentation')" data-view="documentation">
+                <span class="nav-icon">📚</span>
+                <span>Documentation</span>
             </div>
-            <div class="stat-card">
-                <div class="stat-value" id="blacklistCount">0</div>
-                <div class="stat-label">Blacklisted</div>
+            <div class="nav-item" onclick="switchView('configuration')" data-view="configuration">
+                <span class="nav-icon">⚙️</span>
+                <span>Configuration</span>
+            </div>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="connection-status">
+                <span class="status-indicator" id="statusIndicator"></span>
+                <span id="statusText">Connecting...</span>
             </div>
         </div>
+    </div>
 
-        <div class="content-grid">
-            <div class="panel">
-                <h2>💬 Live Conversations</h2>
-                <div id="conversations">
-                    <div class="empty-state">No active conversations</div>
+    <!-- Main Content -->
+    <div class="main-content" id="mainContent">
+        <!-- Mobile Header -->
+        <div class="mobile-header">
+            <button class="mobile-menu-btn" onclick="toggleMobileSidebar()">☰</button>
+            <div class="mobile-title">🥗 Salad Support AI</div>
+            <div></div>
+        </div>
+
+        <!-- Live Conversations View -->
+        <div class="view-container active" id="view-live">
+            <div class="container">
+                <div class="page-header">
+                    <h1 class="page-title">Live Conversations</h1>
+                    <p class="page-subtitle">Monitor active support conversations in real-time</p>
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="activeConversations">0</div>
+                        <div class="stat-label">Active Conversations</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="totalMessages">0</div>
+                        <div class="stat-label">Total Messages</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="spamCount">0</div>
+                        <div class="stat-label">Spam Blocked</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="bannedCount">0</div>
+                        <div class="stat-label">Temp Banned</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="blacklistCount">0</div>
+                        <div class="stat-label">Blacklisted</div>
+                    </div>
+                </div>
+
+                <div class="content-grid">
+                    <div class="panel">
+                        <h2>💬 Active Threads</h2>
+                        <div id="conversations">
+                            <div class="empty-state">No active conversations</div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <div class="panel-header">
+                            <h2>⚠️ Recent Errors</h2>
+                            <button class="clear-all-btn" onclick="clearAllErrors()">Clear All</button>
+                        </div>
+                        <div id="errors">
+                            <div class="empty-state">No errors</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h2>👍 Feedback Summary</h2>
+                    <div id="feedback">
+                        <div class="empty-state">No feedback yet</div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h2>📊 Feedback Over Time (Last 10 Days)</h2>
+                    <div id="feedbackGraph">
+                        <div class="empty-state">Loading feedback data...</div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-header">
+                        <h2>🚫 Spam Detection</h2>
+                        <button class="clear-all-btn" onclick="clearAllSpam()">Clear All</button>
+                    </div>
+                    <div id="spam">
+                        <div class="empty-state">No spam detected</div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h2>⏱️ Temporary Bans</h2>
+                    <div id="banned">
+                        <div class="empty-state">No temporarily banned users</div>
+                    </div>
                 </div>
             </div>
+        </div>
 
-            <div class="panel">
-                <div class="panel-header">
-                    <h2>⚠️ Recent Errors</h2>
-                    <button class="clear-all-btn" onclick="clearAllErrors()">Clear All</button>
+        <!-- Transcript History View -->
+        <div class="view-container" id="view-transcripts">
+            <div class="container">
+                <div class="page-header">
+                    <h1 class="page-title">Transcript History</h1>
+                    <p class="page-subtitle">Browse and search past conversation transcripts</p>
                 </div>
-                <div id="errors">
-                    <div class="empty-state">No errors</div>
+
+                <div class="panel">
+                    <div class="transcript-header">
+                        <div class="search-box">
+                            <input type="text" id="transcriptSearch" placeholder="🔍 Search by thread ID or user..." onkeyup="filterTranscripts()">
+                        </div>
+                        <button class="btn-primary" onclick="loadTranscripts()">🔄 Refresh</button>
+                    </div>
+
+                    <div id="transcriptList">
+                        <div class="empty-state">Loading transcripts...</div>
+                    </div>
+
+                    <div class="pagination" id="transcriptPagination" style="display: none;">
+                        <button onclick="changePage(-1)">← Previous</button>
+                        <span id="pageInfo">Page 1</span>
+                        <button onclick="changePage(1)">Next →</button>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="panel">
-            <h2>👍 Feedback Summary</h2>
-            <div id="feedback">
-                <div class="empty-state">No feedback yet</div>
-            </div>
-        </div>
-
-        <div class="panel">
-            <h2>📊 Feedback Over Time (Last 10 Days)</h2>
-            <div id="feedbackGraph">
-                <div class="empty-state">Loading feedback data...</div>
-            </div>
-        </div>
-
-        <div class="panel">
-            <div class="panel-header">
-                <h2>🚫 Spam Detection</h2>
-                <button class="clear-all-btn" onclick="clearAllSpam()">Clear All</button>
-            </div>
-            <div id="spam">
-                <div class="empty-state">No spam detected</div>
-            </div>
-        </div>
-
-        <div class="panel">
-            <h2>⏱️ Temporary Bans</h2>
-            <div id="banned">
-                <div class="empty-state">No temporarily banned users</div>
-            </div>
-        </div>
-
-        <div class="panel">
-            <h2>🔨 Blacklist Management</h2>
-            <div class="blacklist-form">
-                <div class="form-group">
-                    <label for="blacklistUserId">User ID</label>
-                    <input type="text" id="blacklistUserId" placeholder="Enter Discord user ID">
+        <!-- Blacklisted Users View -->
+        <div class="view-container" id="view-blacklist">
+            <div class="container">
+                <div class="page-header">
+                    <h1 class="page-title">Blacklisted Users</h1>
+                    <p class="page-subtitle">Manage permanently blocked users</p>
                 </div>
-                <div class="form-group">
-                    <label for="blacklistUsername">Username (optional)</label>
-                    <input type="text" id="blacklistUsername" placeholder="Enter username">
+
+                <div class="panel">
+                    <h2>Add New Blacklist Entry</h2>
+                    <div class="blacklist-form">
+                        <div class="form-group">
+                            <label for="blacklistUserId">User ID</label>
+                            <input type="text" id="blacklistUserId" placeholder="Enter Discord user ID">
+                        </div>
+                        <div class="form-group">
+                            <label for="blacklistUsername">Username (optional)</label>
+                            <input type="text" id="blacklistUsername" placeholder="Enter username">
+                        </div>
+                        <div class="form-group">
+                            <label for="blacklistReason">Reason</label>
+                            <input type="text" id="blacklistReason" placeholder="Enter reason for blacklist">
+                        </div>
+                        <button class="btn-primary" onclick="addBlacklist()">🔨 Blacklist User</button>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="blacklistReason">Reason</label>
-                    <input type="text" id="blacklistReason" placeholder="Enter reason for blacklist">
+
+                <div class="panel">
+                    <h2>Current Blacklist</h2>
+                    <div id="blacklist">
+                        <div class="empty-state">No blacklisted users</div>
+                    </div>
                 </div>
-                <button class="btn-primary" onclick="addBlacklist()">Blacklist User</button>
             </div>
-            <div id="blacklist">
-                <div class="empty-state">No blacklisted users</div>
+        </div>
+
+        <!-- Documentation View (Placeholder) -->
+        <div class="view-container" id="view-documentation">
+            <div class="container">
+                <div class="panel">
+                    <div class="placeholder-view">
+                        <div class="placeholder-icon">📚</div>
+                        <h2 class="placeholder-title">Documentation Management</h2>
+                        <p class="placeholder-text">Documentation editor and management features coming soon.<br>This section will allow you to manage AI knowledge base documents.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Configuration View (Placeholder) -->
+        <div class="view-container" id="view-configuration">
+            <div class="container">
+                <div class="panel">
+                    <div class="placeholder-view">
+                        <div class="placeholder-icon">⚙️</div>
+                        <h2 class="placeholder-title">Configuration Editor</h2>
+                        <p class="placeholder-text">System configuration management coming soon.<br>This section will allow you to edit AI prompts, settings, and system parameters.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transcript Viewer Modal -->
+    <div class="modal" id="transcriptModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">Transcript Viewer</h3>
+                <button class="modal-close" onclick="closeTranscriptModal()">×</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <div class="empty-state">Loading transcript...</div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="downloadCurrentTranscript()">💾 Download</button>
+                <button class="btn-danger" onclick="deleteCurrentTranscript()">🗑️ Delete</button>
+                <button class="btn-primary" onclick="closeTranscriptModal()">Close</button>
             </div>
         </div>
     </div>
@@ -937,7 +1545,14 @@
         let showAllErrors = false;
         let showAllSpam = false;
         let guildId = null;
-        const autoClearTimers = new Map(); // timestamp -> timeoutId
+        const autoClearTimers = new Map();
+
+        // Transcript state
+        let allTranscripts = [];
+        let filteredTranscripts = [];
+        let currentPage = 1;
+        let transcriptsPerPage = 10;
+        let currentTranscript = null;
 
         const statusIndicator = document.getElementById('statusIndicator');
         const statusText = document.getElementById('statusText');
@@ -949,6 +1564,61 @@
         const blacklistDiv = document.getElementById('blacklist');
         const autoScrollToggle = document.getElementById('autoScrollToggle');
 
+        // View Switching
+        function switchView(viewName) {
+            // Update active nav item
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.querySelector(`[data-view="${viewName}"]`).classList.add('active');
+
+            // Update active view
+            document.querySelectorAll('.view-container').forEach(view => {
+                view.classList.remove('active');
+            });
+            document.getElementById(`view-${viewName}`).classList.add('active');
+
+            // Update URL hash
+            window.location.hash = viewName;
+
+            // Load data for specific views
+            if (viewName === 'transcripts') {
+                loadTranscripts();
+            } else if (viewName === 'blacklist') {
+                fetchBlacklist();
+            }
+
+            // Close mobile sidebar
+            if (window.innerWidth <= 768) {
+                document.getElementById('sidebar').classList.remove('mobile-open');
+            }
+        }
+
+        // Sidebar Toggle
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+
+            sidebar.classList.toggle('collapsed');
+            mainContent.classList.toggle('expanded');
+        }
+
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('mobile-open');
+        }
+
+        // Handle hash navigation
+        function handleHashChange() {
+            const hash = window.location.hash.slice(1);
+            if (hash && ['live', 'transcripts', 'blacklist', 'documentation', 'configuration'].includes(hash)) {
+                switchView(hash);
+            }
+        }
+
+        window.addEventListener('hashchange', handleHashChange);
+
+        // WebSocket Connection
         function connect() {
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
             ws = new WebSocket(`${protocol}//${window.location.host}`);
@@ -975,7 +1645,7 @@
             ws.onclose = () => {
                 console.log('Disconnected from dashboard');
                 statusIndicator.classList.add('disconnected');
-                statusText.textContent = 'Disconnected - Reconnecting...';
+                statusText.textContent = 'Disconnected';
                 reconnectTimeout = setTimeout(connect, 3000);
             };
         }
@@ -1030,7 +1700,6 @@
         }
 
         function updateConversations(conversations) {
-            // Filter out ended conversations
             const activeConversations = conversations ? conversations.filter(conv => !conv.ended) : [];
 
             if (!activeConversations || activeConversations.length === 0) {
@@ -1079,7 +1748,6 @@
             const displayErrors = showAllErrors ? recentErrors : recentErrors.slice(0, 3);
 
             errorsDiv.innerHTML = displayErrors.map(error => {
-                // Schedule auto-clear after 3 minutes
                 scheduleAutoClear(error.timestamp, 'error');
 
                 return `
@@ -1092,7 +1760,6 @@
                 `;
             }).join('');
 
-            // Add "Show More" button if there are more than 3 errors
             if (recentErrors.length > 3 && !showAllErrors) {
                 errorsDiv.innerHTML += `
                     <button class="show-more-btn" onclick="toggleShowAllErrors()">
@@ -1118,7 +1785,6 @@
                 return;
             }
 
-            // Calculate aggregated counts
             const positiveCount = feedback.filter(fb => fb.type === 'positive').length;
             const negativeCount = feedback.filter(fb => fb.type === 'negative').length;
 
@@ -1139,7 +1805,6 @@
         }
 
         function updateSpam(spam) {
-            // Filter out blacklisted events
             const filteredSpam = spam ? spam.filter(sp => sp.reason !== 'blacklisted') : [];
 
             if (!filteredSpam || filteredSpam.length === 0) {
@@ -1151,7 +1816,6 @@
             const displaySpam = showAllSpam ? recentSpam : recentSpam.slice(0, 3);
 
             spamDiv.innerHTML = displaySpam.map(sp => {
-                // Schedule auto-clear after 3 minutes
                 scheduleAutoClear(sp.timestamp, 'spam');
 
                 return `
@@ -1167,7 +1831,6 @@
                 `;
             }).join('');
 
-            // Add "Show More" button if there are more than 3 spam items
             if (recentSpam.length > 3 && !showAllSpam) {
                 spamDiv.innerHTML += `
                     <button class="show-more-btn" onclick="toggleShowAllSpam()">
@@ -1214,7 +1877,6 @@
                 `;
             }).join('');
 
-            // Start countdown timers
             banned.forEach(ban => {
                 startBanTimer(ban.userId, ban.remainingMs);
             });
@@ -1270,50 +1932,40 @@
                 return;
             }
 
-            // Graph dimensions
-            const width = 100; // percentage
-            const height = 100; // percentage
+            const width = 100;
+            const height = 100;
             const padding = { top: 10, right: 5, bottom: 20, left: 5 };
             const graphWidth = width - padding.left - padding.right;
             const graphHeight = height - padding.top - padding.bottom;
 
-            // Find min and max values for scaling
             const values = dailyData.map(d => d.overall);
             const maxValue = Math.max(...values, 0);
             const minValue = Math.min(...values, 0);
             const range = maxValue - minValue || 1;
 
-            // Calculate positions for each point
             const points = dailyData.map((day, i) => {
                 const x = padding.left + (i / (dailyData.length - 1)) * graphWidth;
                 const y = padding.top + ((maxValue - day.overall) / range) * graphHeight;
                 return { x, y, ...day };
             });
 
-            // Create line path
             const linePath = points.map((p, i) =>
                 `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`
             ).join(' ');
 
-            // Calculate zero line position
             const zeroY = padding.top + (maxValue / range) * graphHeight;
 
-            // Build SVG
             feedbackGraphDiv.innerHTML = `
                 <svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" style="overflow: visible;">
-                    <!-- Grid lines -->
                     ${[0, 25, 50, 75, 100].map(percent => {
                         const y = padding.top + (percent / 100) * graphHeight;
                         return `<line class="graph-grid-line" x1="${padding.left}" y1="${y}" x2="${width - padding.right}" y2="${y}" />`;
                     }).join('')}
 
-                    <!-- Zero line -->
                     ${minValue < 0 ? `<line class="zero-line" x1="${padding.left}" y1="${zeroY}" x2="${width - padding.right}" y2="${zeroY}" />` : ''}
 
-                    <!-- Line -->
                     <path class="graph-line" d="${linePath}" vector-effect="non-scaling-stroke" />
 
-                    <!-- Points -->
                     ${points.map(p => `
                         <circle class="graph-point ${p.overall < 0 ? 'negative' : ''}"
                                 cx="${p.x}" cy="${p.y}" r="4"
@@ -1323,14 +1975,12 @@
                     `).join('')}
                 </svg>
 
-                <!-- Labels below graph -->
                 <svg viewBox="0 0 ${width} 20" preserveAspectRatio="xMidYMid meet" style="height: 20px; margin-top: 5px;">
                     ${points.map(p => `
                         <text class="graph-label" x="${p.x}" y="10">${p.date}</text>
                     `).join('')}
                 </svg>
 
-                <!-- Values above graph -->
                 <svg viewBox="0 0 ${width} 15" preserveAspectRatio="xMidYMid meet" style="height: 15px; margin-bottom: 5px;">
                     ${points.map(p => `
                         <text class="graph-value" x="${p.x}" y="12">${p.overall >= 0 ? '+' : ''}${p.overall}</text>
@@ -1339,6 +1989,173 @@
             `;
         }
 
+        // Transcript Functions
+        async function loadTranscripts() {
+            const transcriptList = document.getElementById('transcriptList');
+            transcriptList.innerHTML = '<div class="empty-state">Loading transcripts...</div>';
+
+            try {
+                const response = await fetch('/api/transcripts');
+                allTranscripts = await response.json();
+                filteredTranscripts = allTranscripts;
+                currentPage = 1;
+                displayTranscripts();
+            } catch (error) {
+                console.error('Error loading transcripts:', error);
+                transcriptList.innerHTML = '<div class="empty-state">Error loading transcripts</div>';
+            }
+        }
+
+        function filterTranscripts() {
+            const searchTerm = document.getElementById('transcriptSearch').value.toLowerCase();
+
+            if (!searchTerm) {
+                filteredTranscripts = allTranscripts;
+            } else {
+                filteredTranscripts = allTranscripts.filter(t =>
+                    t.threadId.toLowerCase().includes(searchTerm) ||
+                    (t.originalPoster && t.originalPoster.toLowerCase().includes(searchTerm))
+                );
+            }
+
+            currentPage = 1;
+            displayTranscripts();
+        }
+
+        function displayTranscripts() {
+            const transcriptList = document.getElementById('transcriptList');
+            const pagination = document.getElementById('transcriptPagination');
+
+            if (filteredTranscripts.length === 0) {
+                transcriptList.innerHTML = '<div class="empty-state">No transcripts found</div>';
+                pagination.style.display = 'none';
+                return;
+            }
+
+            const startIdx = (currentPage - 1) * transcriptsPerPage;
+            const endIdx = startIdx + transcriptsPerPage;
+            const pageTranscripts = filteredTranscripts.slice(startIdx, endIdx);
+
+            transcriptList.innerHTML = pageTranscripts.map(t => `
+                <div class="transcript-item" onclick="viewTranscript('${t.threadId}')">
+                    <div class="transcript-meta">
+                        <div>
+                            <div class="transcript-id">Thread: ${t.threadId}</div>
+                            <div style="color: var(--text-color); margin-top: 5px;">
+                                👤 ${escapeHtml(t.originalPoster || 'Unknown User')}
+                            </div>
+                        </div>
+                        <div class="transcript-date">${new Date(t.createdAt).toLocaleString()}</div>
+                    </div>
+                    <div class="transcript-info">
+                        <span class="transcript-badge">${t.messageCount} messages</span>
+                        ${t.ended ? '<span class="transcript-badge" style="background: #667eea;">Ended</span>' : ''}
+                    </div>
+                </div>
+            `).join('');
+
+            // Update pagination
+            const totalPages = Math.ceil(filteredTranscripts.length / transcriptsPerPage);
+            document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages}`;
+
+            const prevBtn = pagination.querySelector('button:first-child');
+            const nextBtn = pagination.querySelector('button:last-child');
+
+            prevBtn.disabled = currentPage === 1;
+            nextBtn.disabled = currentPage === totalPages;
+
+            pagination.style.display = 'flex';
+        }
+
+        function changePage(delta) {
+            currentPage += delta;
+            displayTranscripts();
+        }
+
+        async function viewTranscript(threadId) {
+            const modal = document.getElementById('transcriptModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalBody = document.getElementById('modalBody');
+
+            modal.classList.add('active');
+            modalTitle.textContent = `Transcript: ${threadId}`;
+            modalBody.innerHTML = '<div class="empty-state">Loading transcript...</div>';
+
+            try {
+                const response = await fetch(`/api/transcripts/${threadId}`);
+                const transcript = await response.json();
+                currentTranscript = transcript;
+
+                modalBody.innerHTML = `
+                    <div style="margin-bottom: 20px;">
+                        <div style="color: var(--muted-text); font-size: 0.9em;">
+                            <strong>Thread ID:</strong> ${transcript.threadId}<br>
+                            <strong>Original Poster:</strong> ${escapeHtml(transcript.originalPoster || 'Unknown')}<br>
+                            <strong>Created:</strong> ${new Date(transcript.createdAt).toLocaleString()}<br>
+                            <strong>Status:</strong> ${transcript.ended ? 'Ended' : 'Active'}<br>
+                            <strong>Messages:</strong> ${transcript.messageCount}
+                        </div>
+                    </div>
+                    <div style="border-top: 1px solid var(--border-color); padding-top: 20px;">
+                        <h3 style="color: var(--heading-color); margin-bottom: 15px;">Messages</h3>
+                        ${transcript.messages.map(msg => `
+                            <div class="message-item ${msg.role}">
+                                <div class="message-role">${msg.role}</div>
+                                <div class="message-content">${escapeHtml(msg.content)}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error loading transcript:', error);
+                modalBody.innerHTML = '<div class="empty-state">Error loading transcript</div>';
+            }
+        }
+
+        function closeTranscriptModal() {
+            document.getElementById('transcriptModal').classList.remove('active');
+            currentTranscript = null;
+        }
+
+        async function downloadCurrentTranscript() {
+            if (!currentTranscript) return;
+
+            const blob = new Blob([JSON.stringify(currentTranscript, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `transcript-${currentTranscript.threadId}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        async function deleteCurrentTranscript() {
+            if (!currentTranscript) return;
+
+            if (!confirm(`Are you sure you want to delete transcript ${currentTranscript.threadId}?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/transcripts/${currentTranscript.threadId}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    closeTranscriptModal();
+                    loadTranscripts();
+                } else {
+                    alert('Failed to delete transcript');
+                }
+            } catch (error) {
+                console.error('Error deleting transcript:', error);
+                alert('Failed to delete transcript');
+            }
+        }
+
+        // API Calls
         async function endConversation(threadId) {
             if (!confirm('Are you sure you want to end this conversation?')) {
                 return;
@@ -1436,131 +2253,6 @@
             }
         }
 
-        function formatTime(timestamp) {
-            const date = new Date(timestamp);
-            const now = new Date();
-            const diff = now - date;
-
-            if (diff < 60000) return 'Just now';
-            if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-            if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-
-            return date.toLocaleString();
-        }
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // Clear individual error
-        function removeError(timestamp) {
-            // Cancel auto-clear timer if exists
-            cancelAutoClear(timestamp);
-
-            const errorItem = document.querySelector(`.error-item[data-timestamp="${timestamp}"]`);
-            if (errorItem) {
-                errorItem.style.opacity = '0';
-                errorItem.style.transform = 'translateX(-20px)';
-                setTimeout(() => {
-                    errorItem.remove();
-                    // Check if no errors left
-                    const remainingErrors = document.querySelectorAll('.error-item');
-                    if (remainingErrors.length === 0) {
-                        errorsDiv.innerHTML = '<div class="empty-state">No errors</div>';
-                    }
-                }, 300);
-            }
-        }
-
-        // Clear all errors
-        function clearAllErrors() {
-            const errorItems = document.querySelectorAll('.error-item');
-            errorItems.forEach((item, index) => {
-                setTimeout(() => {
-                    item.style.opacity = '0';
-                    item.style.transform = 'translateX(-20px)';
-                }, index * 50);
-            });
-            setTimeout(() => {
-                errorsDiv.innerHTML = '<div class="empty-state">No errors</div>';
-            }, errorItems.length * 50 + 300);
-        }
-
-        // Clear individual spam
-        function removeSpam(timestamp) {
-            // Cancel auto-clear timer if exists
-            cancelAutoClear(timestamp);
-
-            const spamItem = document.querySelector(`.spam-item[data-timestamp="${timestamp}"]`);
-            if (spamItem) {
-                spamItem.style.opacity = '0';
-                spamItem.style.transform = 'translateX(-20px)';
-                setTimeout(() => {
-                    spamItem.remove();
-                    // Check if no spam left
-                    const remainingSpam = document.querySelectorAll('.spam-item');
-                    if (remainingSpam.length === 0) {
-                        spamDiv.innerHTML = '<div class="empty-state">No spam detected</div>';
-                    }
-                }, 300);
-            }
-        }
-
-        // Clear all spam
-        function clearAllSpam() {
-            const spamItems = document.querySelectorAll('.spam-item');
-            spamItems.forEach((item, index) => {
-                setTimeout(() => {
-                    item.style.opacity = '0';
-                    item.style.transform = 'translateX(-20px)';
-                }, index * 50);
-            });
-            setTimeout(() => {
-                spamDiv.innerHTML = '<div class="empty-state">No spam detected</div>';
-            }, spamItems.length * 50 + 300);
-        }
-
-        // Auto-clear notifications after 3 minutes
-        function scheduleAutoClear(timestamp, type) {
-            // Cancel existing timer if it exists
-            cancelAutoClear(timestamp);
-
-            // Schedule new timer for 3 minutes (180000ms)
-            const timerId = setTimeout(() => {
-                if (type === 'error') {
-                    removeError(timestamp);
-                } else if (type === 'spam') {
-                    removeSpam(timestamp);
-                }
-                autoClearTimers.delete(timestamp);
-            }, 180000);
-
-            autoClearTimers.set(timestamp, timerId);
-        }
-
-        function cancelAutoClear(timestamp) {
-            const timerId = autoClearTimers.get(timestamp);
-            if (timerId) {
-                clearTimeout(timerId);
-                autoClearTimers.delete(timestamp);
-            }
-        }
-
-        // Toggle show all errors
-        function toggleShowAllErrors() {
-            showAllErrors = !showAllErrors;
-            fetchErrors();
-        }
-
-        // Toggle show all spam
-        function toggleShowAllSpam() {
-            showAllSpam = !showAllSpam;
-            fetchSpam();
-        }
-
-        // Add user to blacklist
         async function addBlacklist() {
             const userId = document.getElementById('blacklistUserId').value.trim();
             const username = document.getElementById('blacklistUsername').value.trim();
@@ -1591,12 +2283,10 @@
                 });
 
                 if (response.ok) {
-                    // Clear form
                     document.getElementById('blacklistUserId').value = '';
                     document.getElementById('blacklistUsername').value = '';
                     document.getElementById('blacklistReason').value = '';
 
-                    // Refresh blacklist
                     fetchBlacklist();
                     fetchStats();
                 } else {
@@ -1609,7 +2299,6 @@
             }
         }
 
-        // Remove user from blacklist
         async function removeBlacklist(userId) {
             if (!confirm(`Are you sure you want to unblacklist user ${userId}?`)) {
                 return;
@@ -1621,7 +2310,6 @@
                 });
 
                 if (response.ok) {
-                    // Refresh blacklist
                     fetchBlacklist();
                     fetchStats();
                 } else {
@@ -1630,8 +2318,120 @@
                 }
             } catch (error) {
                 console.error('Error unblacklisting user:', error);
-                alert('Failed to unblacklist user');
+                alert('Failed to unblacklisting user');
             }
+        }
+
+        // Utility Functions
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
+
+            if (diff < 60000) return 'Just now';
+            if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+            if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+
+            return date.toLocaleString();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function removeError(timestamp) {
+            cancelAutoClear(timestamp);
+
+            const errorItem = document.querySelector(`.error-item[data-timestamp="${timestamp}"]`);
+            if (errorItem) {
+                errorItem.style.opacity = '0';
+                errorItem.style.transform = 'translateX(-20px)';
+                setTimeout(() => {
+                    errorItem.remove();
+                    const remainingErrors = document.querySelectorAll('.error-item');
+                    if (remainingErrors.length === 0) {
+                        errorsDiv.innerHTML = '<div class="empty-state">No errors</div>';
+                    }
+                }, 300);
+            }
+        }
+
+        function clearAllErrors() {
+            const errorItems = document.querySelectorAll('.error-item');
+            errorItems.forEach((item, index) => {
+                setTimeout(() => {
+                    item.style.opacity = '0';
+                    item.style.transform = 'translateX(-20px)';
+                }, index * 50);
+            });
+            setTimeout(() => {
+                errorsDiv.innerHTML = '<div class="empty-state">No errors</div>';
+            }, errorItems.length * 50 + 300);
+        }
+
+        function removeSpam(timestamp) {
+            cancelAutoClear(timestamp);
+
+            const spamItem = document.querySelector(`.spam-item[data-timestamp="${timestamp}"]`);
+            if (spamItem) {
+                spamItem.style.opacity = '0';
+                spamItem.style.transform = 'translateX(-20px)';
+                setTimeout(() => {
+                    spamItem.remove();
+                    const remainingSpam = document.querySelectorAll('.spam-item');
+                    if (remainingSpam.length === 0) {
+                        spamDiv.innerHTML = '<div class="empty-state">No spam detected</div>';
+                    }
+                }, 300);
+            }
+        }
+
+        function clearAllSpam() {
+            const spamItems = document.querySelectorAll('.spam-item');
+            spamItems.forEach((item, index) => {
+                setTimeout(() => {
+                    item.style.opacity = '0';
+                    item.style.transform = 'translateX(-20px)';
+                }, index * 50);
+            });
+            setTimeout(() => {
+                spamDiv.innerHTML = '<div class="empty-state">No spam detected</div>';
+            }, spamItems.length * 50 + 300);
+        }
+
+        function scheduleAutoClear(timestamp, type) {
+            cancelAutoClear(timestamp);
+
+            const timerId = setTimeout(() => {
+                if (type === 'error') {
+                    removeError(timestamp);
+                } else if (type === 'spam') {
+                    removeSpam(timestamp);
+                }
+                autoClearTimers.delete(timestamp);
+            }, 180000);
+
+            autoClearTimers.set(timestamp, timerId);
+        }
+
+        function cancelAutoClear(timestamp) {
+            const timerId = autoClearTimers.get(timestamp);
+            if (timerId) {
+                clearTimeout(timerId);
+                autoClearTimers.delete(timestamp);
+            }
+        }
+
+        function toggleShowAllErrors() {
+            showAllErrors = !showAllErrors;
+            fetchErrors();
+        }
+
+        function toggleShowAllSpam() {
+            showAllSpam = !showAllSpam;
+            fetchSpam();
         }
 
         autoScrollToggle.addEventListener('click', () => {
@@ -1640,7 +2440,6 @@
             autoScrollToggle.classList.toggle('disabled', !autoScroll);
         });
 
-        // Theme toggle functionality
         function loadTheme() {
             const savedTheme = localStorage.getItem('dashboard-theme') || 'dark';
             document.documentElement.setAttribute('data-theme', savedTheme);
@@ -1653,9 +2452,10 @@
             localStorage.setItem('dashboard-theme', newTheme);
         }
 
-        // Initialize theme on load
+        // Initialize
         loadTheme();
         connect();
+        handleHashChange();
     </script>
 </body>
 </html>

@@ -1,5 +1,7 @@
 import { Client, GatewayIntentBits, ChannelType, PermissionFlagsBits } from 'discord.js';
 import { EventEmitter } from 'events';
+import fs from 'fs';
+import path from 'path';
 import AIService from './services/aiService.js';
 import ConversationManager from './utils/conversationManager.js';
 import MessageQueue from './utils/messageQueue.js';
@@ -159,6 +161,9 @@ class SupportBot extends EventEmitter {
       // Record thread creation in spam filter
       this.spamFilter.recordThread(message.author.id);
       this.spamFilter.recordMessage(message.author.id, message.content);
+
+      // Log initial message for doc refinement
+      this.logInitialMessage(message.content);
 
       await thread.send(`👋 Hi ${message.author}! I'm here to help with your support question. Let me look into that for you...`);
 
@@ -885,6 +890,28 @@ class SupportBot extends EventEmitter {
     } catch (error) {
       console.error(`Error ending conversation from dashboard ${threadId}:`, error);
       throw error; // Re-throw to be handled by the API endpoint
+    }
+  }
+
+  logInitialMessage(messageContent) {
+    try {
+      const logFile = path.join(process.cwd(), 'data', 'initial_messages.txt');
+      const logDir = path.dirname(logFile);
+
+      // Ensure data directory exists
+      if (!fs.existsSync(logDir)) {
+        fs.mkdirSync(logDir, { recursive: true });
+      }
+
+      // Format: timestamp | message content
+      const timestamp = new Date().toISOString();
+      const logEntry = `[${timestamp}] ${messageContent}\n`;
+
+      // Append to file
+      fs.appendFileSync(logFile, logEntry, 'utf8');
+    } catch (error) {
+      console.error('Error logging initial message:', error);
+      // Don't throw - logging failure shouldn't break the bot
     }
   }
 

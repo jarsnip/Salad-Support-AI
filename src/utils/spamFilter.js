@@ -14,12 +14,13 @@ class SpamFilter {
     this.blacklistFile = path.join(process.cwd(), 'data', 'blacklist.json');
 
     // Track user activity
-    this.userActivity = new Map(); // userId -> { threads: [], violations: [], lastThreadTime }
+    this.userActivity = new Map(); // userId -> { threads: [], violations: [], lastThreadTime, cooldownAttempts }
     this.messageHashes = new Map(); // messageHash -> { userId, timestamp }
     this.bannedUsers = new Map(); // userId -> { until: timestamp, reason }
     this.blacklist = new Map(); // userId -> { username, reason, blockedBy, timestamp }
     this.spamEvents = []; // Log spam attempts
     this.maxSpamEvents = 100;
+    this.spamEventTTL = 2 * 60 * 1000; // Auto-clear spam events after 2 minutes
 
     // Load blacklist from file
     this.loadBlacklist();
@@ -95,8 +96,11 @@ class SpamFilter {
     // Check cooldown
     const cooldownCheck = this.checkCooldown(userId);
     if (!cooldownCheck.allowed) {
-      this.recordViolation(userId, username, cooldownCheck.reason);
-      this.logSpamEvent(userId, username, content, cooldownCheck.reason);
+      // Only log spam and record violation if user has attempted 3+ times
+      if (cooldownCheck.details.attempts >= 3) {
+        this.recordViolation(userId, username, cooldownCheck.reason);
+        this.logSpamEvent(userId, username, content, cooldownCheck.reason, { attempts: cooldownCheck.details.attempts });
+      }
       return cooldownCheck;
     }
 
@@ -194,13 +198,19 @@ class SpamFilter {
     if (activity.lastThreadTime && (now - activity.lastThreadTime) < this.cooldownPeriod) {
       const waitTime = Math.ceil((activity.lastThreadTime + this.cooldownPeriod - now) / 1000);
 
+      // Increment cooldown attempts counter
+      activity.cooldownAttempts = (activity.cooldownAttempts || 0) + 1;
+
       return {
         allowed: false,
         reason: 'cooldown',
         message: `⏱️ Please wait ${waitTime} seconds before creating another support thread.`,
-        details: { waitTime }
+        details: { waitTime, attempts: activity.cooldownAttempts }
       };
     }
+
+    // Reset cooldown attempts when cooldown period passes
+    activity.cooldownAttempts = 0;
 
     return { allowed: true };
   }
@@ -366,7 +376,8 @@ class SpamFilter {
       this.userActivity.set(userId, {
         threads: [],
         violations: [],
-        lastThreadTime: null
+        lastThreadTime: null,
+        cooldownAttempts: 0
       });
     }
     return this.userActivity.get(userId);
@@ -392,7 +403,12 @@ class SpamFilter {
   }
 
   getSpamEvents() {
-    return [...this.spamEvents].reverse();
+    const now = Date.now();
+    // Filter out spam events older than 2 minutes
+    const recentEvents = this.spamEvents.filter(event =>
+      now - event.timestamp < this.spamEventTTL
+    );
+    return [...recentEvents].reverse();
   }
 
   getBannedUsers() {
@@ -431,6 +447,12 @@ class SpamFilter {
       }
     }
 
+    // Clean up old spam events (older than 10 minutes to preserve some history)
+    const oldEventCount = this.spamEvents.length;
+    this.spamEvents = this.spamEvents.filter(event =>
+      now - event.timestamp < 10 * 60 * 1000
+    );
+
     // Clean up old user activity
     for (const [userId, activity] of this.userActivity.entries()) {
       activity.threads = activity.threads.filter(t => now - t < this.timeWindow);
@@ -452,11 +474,12 @@ class SpamFilter {
     const cleaned = {
       users: this.userActivity.size,
       hashes: this.messageHashes.size,
-      bans: this.bannedUsers.size
+      bans: this.bannedUsers.size,
+      spamEvents: this.spamEvents.length
     };
 
-    if (this.userActivity.size > 0 || this.messageHashes.size > 0 || this.bannedUsers.size > 0) {
-      console.log(`🧹 Spam filter cleanup: ${cleaned.users} users, ${cleaned.hashes} hashes, ${cleaned.bans} bans`);
+    if (this.userActivity.size > 0 || this.messageHashes.size > 0 || this.bannedUsers.size > 0 || oldEventCount > this.spamEvents.length) {
+      console.log(`🧹 Spam filter cleanup: ${cleaned.users} users, ${cleaned.hashes} hashes, ${cleaned.bans} bans, ${cleaned.spamEvents} spam events`);
     }
   }
 }

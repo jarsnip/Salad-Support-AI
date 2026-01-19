@@ -186,13 +186,58 @@
             padding: 15px;
             margin-bottom: 15px;
             border-radius: 8px;
-            cursor: pointer;
             transition: all 0.2s;
         }
 
         .conversation-item:hover {
             background: var(--panel-bg);
             transform: translateX(5px);
+        }
+
+        .conversation-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.8em;
+            font-weight: 600;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-view {
+            background: var(--accent-color);
+            color: var(--button-primary-text);
+        }
+
+        .btn-view:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-link {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-link:hover {
+            background: #5568d3;
+        }
+
+        .btn-end {
+            background: var(--button-danger-bg);
+            color: white;
+        }
+
+        .btn-end:hover {
+            background: #dc2626;
         }
 
         .conversation-header {
@@ -841,6 +886,7 @@
         let reconnectTimeout;
         let showAllErrors = false;
         let showAllSpam = false;
+        let guildId = null;
         const autoClearTimers = new Map(); // timestamp -> timeoutId
 
         const statusIndicator = document.getElementById('statusIndicator');
@@ -886,12 +932,16 @@
         function handleMessage(message) {
             switch (message.type) {
                 case 'init':
+                    if (message.data.guildId) {
+                        guildId = message.data.guildId;
+                    }
                     updateStats(message.data.stats);
                     updateConversations(message.data.conversations);
                     updateErrors(message.data.errors);
                     updateFeedback(message.data.feedback);
                     updateSpam(message.data.spam);
                     updateBlacklist(message.data.blacklist);
+                    fetchFeedbackGraph();
                     break;
                 case 'messageProcessed':
                 case 'conversationCreated':
@@ -936,30 +986,35 @@
                 return;
             }
 
-            conversationsDiv.innerHTML = activeConversations.map(conv => `
-                <div class="conversation-item" onclick="toggleMessages('${conv.threadId}')">
-                    <div class="conversation-header">
-                        <span class="thread-id">Thread: ${conv.threadId}</span>
-                        <span class="message-count">${conv.messageCount} messages</span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px;">
-                        <div style="color: #8b9eff; font-weight: 500; font-size: 0.9em;">
-                            👤 ${escapeHtml(conv.originalPoster)}
+            conversationsDiv.innerHTML = activeConversations.map(conv => {
+                const discordLink = guildId ? `https://discord.com/channels/${guildId}/${conv.threadId}` : null;
+                return `
+                    <div class="conversation-item">
+                        <div class="conversation-header">
+                            <span class="thread-id">Thread: ${conv.threadId}</span>
+                            <span class="message-count">${conv.messageCount} messages</span>
                         </div>
-                        <div class="conversation-time">
-                            ${formatTime(conv.lastActivity)}
-                        </div>
-                    </div>
-                    <div id="messages-${conv.threadId}" style="display: none; margin-top: 15px;">
-                        ${conv.messages.map(msg => `
-                            <div class="message-item ${msg.role}">
-                                <div class="message-role">${msg.role}</div>
-                                <div class="message-content">${escapeHtml(msg.content.substring(0, 200))}${msg.content.length > 200 ? '...' : ''}</div>
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px;">
+                            <div style="color: #8b9eff; font-weight: 500; font-size: 0.9em;">
+                                👤 ${escapeHtml(conv.originalPoster)}
                             </div>
-                        `).join('')}
+                            <div class="conversation-time">
+                                ${formatTime(conv.lastActivity)}
+                            </div>
+                        </div>
+                        <div class="conversation-actions">
+                            <a href="/conversation.html?threadId=${conv.threadId}${guildId ? '&guildId=' + guildId : ''}"
+                               target="_blank" class="btn-small btn-view">
+                                👁️ View Live
+                            </a>
+                            ${discordLink ? `<a href="${discordLink}" target="_blank" class="btn-small btn-link">🔗 Discord</a>` : ''}
+                            <button class="btn-small btn-end" onclick="endConversation('${conv.threadId}')">
+                                ⏹️ End
+                            </button>
+                        </div>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         function updateErrors(errors) {
@@ -1132,10 +1187,35 @@
             `;
         }
 
-        function toggleMessages(threadId) {
-            const messagesDiv = document.getElementById(`messages-${threadId}`);
-            if (messagesDiv) {
-                messagesDiv.style.display = messagesDiv.style.display === 'none' ? 'block' : 'none';
+        async function endConversation(threadId) {
+            if (!confirm('Are you sure you want to end this conversation?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/conversations/${threadId}/end`, {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    fetchConversations();
+                    fetchStats();
+                } else {
+                    alert('Failed to end conversation');
+                }
+            } catch (error) {
+                console.error('Error ending conversation:', error);
+                alert('Failed to end conversation');
+            }
+        }
+
+        async function fetchFeedbackGraph() {
+            try {
+                const response = await fetch('/api/feedback/daily');
+                const dailyData = await response.json();
+                updateFeedbackGraph(dailyData);
+            } catch (error) {
+                console.error('Error fetching feedback graph:', error);
             }
         }
 

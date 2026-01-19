@@ -132,6 +132,25 @@ export class DashboardServer {
         res.status(500).send('Internal server error');
       }
     });
+
+    // API endpoint to end a conversation
+    this.app.post('/api/conversations/:threadId/end', async (req, res) => {
+      try {
+        const { threadId } = req.params;
+
+        if (!threadId) {
+          return res.status(400).send('threadId is required');
+        }
+
+        // Trigger the bot to end the conversation
+        await this.bot.endConversationFromDashboard(threadId);
+
+        res.json({ success: true, message: 'Conversation ended successfully' });
+      } catch (error) {
+        console.error('Error ending conversation:', error);
+        res.status(500).send(error.message || 'Internal server error');
+      }
+    });
   }
 
   setupWebSocket() {
@@ -143,6 +162,7 @@ export class DashboardServer {
       ws.send(JSON.stringify({
         type: 'init',
         data: {
+          guildId: this.bot.config.guildId,
           conversations: this.getConversationsData(),
           errors: this.errors,
           stats: this.bot.conversationManager.getStats(),

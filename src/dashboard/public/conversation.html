@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Conversation - Salad Support AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-gradient-start: #f8f9fa;
+            --bg-gradient-end: #e9ecef;
+            --text-color: #333;
+            --panel-bg: white;
+            --panel-border: #dee2e6;
+            --card-bg: #f8f9fa;
+            --accent-color: #90FF75;
+            --accent-hover: #7ce65e;
+            --heading-color: #90FF75;
+            --border-color: #dee2e6;
+            --message-user-border: #90FF75;
+            --message-assistant-border: #667eea;
+            --message-assistant-bg: #f0f4ff;
+            --button-primary-bg: #90FF75;
+            --button-primary-text: #1a1a2e;
+            --button-danger-bg: #ef4444;
+            --muted-text: #6c757d;
+        }
+
+        [data-theme="dark"] {
+            --bg-gradient-start: #1a1a2e;
+            --bg-gradient-end: #16213e;
+            --text-color: #e0e0e0;
+            --panel-bg: #252b48;
+            --panel-border: #3a4266;
+            --card-bg: #1e2438;
+            --accent-color: #90FF75;
+            --accent-hover: #7ce65e;
+            --heading-color: #90FF75;
+            --border-color: #3a4266;
+            --message-user-border: #90FF75;
+            --message-assistant-border: #667eea;
+            --message-assistant-bg: #252538;
+            --button-primary-bg: #90FF75;
+            --button-primary-text: #1a1a2e;
+            --button-danger-bg: #ef4444;
+            --muted-text: #a0a0a0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+        }
+
+        body {
+            font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
+            color: var(--text-color);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: var(--panel-bg);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            border: 1px solid var(--panel-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-info h1 {
+            color: var(--heading-color);
+            font-size: 1.8em;
+            margin-bottom: 10px;
+        }
+
+        .header-meta {
+            color: var(--muted-text);
+            font-size: 0.9em;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 600;
+            transition: all 0.2s;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: var(--button-primary-bg);
+            color: var(--button-primary-text);
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: var(--button-danger-bg);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+            transform: translateY(-2px);
+        }
+
+        .messages-container {
+            background: var(--panel-bg);
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            border: 1px solid var(--panel-border);
+            max-height: calc(100vh - 250px);
+            overflow-y: auto;
+        }
+
+        .message-item {
+            background: var(--card-bg);
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border-left: 4px solid var(--border-color);
+        }
+
+        .message-item.user {
+            border-left-color: var(--message-user-border);
+        }
+
+        .message-item.assistant {
+            border-left-color: var(--message-assistant-border);
+            background: var(--message-assistant-bg);
+        }
+
+        .message-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 0.85em;
+        }
+
+        .message-role {
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .message-item.user .message-role {
+            color: var(--message-user-border);
+        }
+
+        .message-item.assistant .message-role {
+            color: var(--message-assistant-border);
+        }
+
+        .message-timestamp {
+            color: var(--muted-text);
+        }
+
+        .message-content {
+            color: var(--text-color);
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: var(--muted-text);
+            padding: 60px 20px;
+            font-style: italic;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .status-badge.active {
+            background: var(--accent-color);
+            color: var(--button-primary-text);
+        }
+
+        .status-badge.ended {
+            background: var(--button-danger-bg);
+            color: white;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            font-size: 1.5em;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(144, 255, 117, 0.3);
+            z-index: 1000;
+        }
+
+        .theme-toggle:hover {
+            background: var(--accent-hover);
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle dark mode">🌓</button>
+
+    <div class="container">
+        <div class="header">
+            <div class="header-info">
+                <h1>💬 Live Conversation</h1>
+                <div class="header-meta">
+                    <span class="status-badge active" id="statusBadge">Active</span>
+                    <span id="threadInfo">Loading...</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <a href="#" class="btn btn-primary" id="discordLink" target="_blank" style="display: none;">
+                    🔗 Open in Discord
+                </a>
+                <button class="btn btn-danger" id="endBtn" onclick="endConversation()" style="display: none;">
+                    ⏹️ End Conversation
+                </button>
+            </div>
+        </div>
+
+        <div class="messages-container" id="messagesContainer">
+            <div class="empty-state">Loading messages...</div>
+        </div>
+    </div>
+
+    <script>
+        let ws;
+        let threadId;
+        let guildId;
+        let reconnectTimeout;
+
+        // Get thread ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        threadId = urlParams.get('threadId');
+        guildId = urlParams.get('guildId');
+
+        if (!threadId) {
+            document.getElementById('messagesContainer').innerHTML =
+                '<div class="empty-state">Error: No thread ID provided</div>';
+        } else {
+            connectWebSocket();
+            fetchConversation();
+        }
+
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            ws = new WebSocket(`${protocol}//${window.location.host}`);
+
+            ws.onopen = () => {
+                console.log('Connected to dashboard');
+            };
+
+            ws.onmessage = (event) => {
+                const message = JSON.parse(event.data);
+                if (message.type === 'messageProcessed' || message.type === 'conversationCreated') {
+                    fetchConversation();
+                } else if (message.type === 'conversationEnded' && message.data.threadId === threadId) {
+                    fetchConversation();
+                }
+            };
+
+            ws.onerror = (error) => {
+                console.error('WebSocket error:', error);
+            };
+
+            ws.onclose = () => {
+                console.log('Disconnected from dashboard');
+                reconnectTimeout = setTimeout(connectWebSocket, 3000);
+            };
+        }
+
+        async function fetchConversation() {
+            try {
+                const response = await fetch('/api/conversations');
+                const conversations = await response.json();
+                const conversation = conversations.find(c => c.threadId === threadId);
+
+                if (conversation) {
+                    updateConversation(conversation);
+                } else {
+                    document.getElementById('messagesContainer').innerHTML =
+                        '<div class="empty-state">Conversation not found</div>';
+                }
+            } catch (error) {
+                console.error('Error fetching conversation:', error);
+            }
+        }
+
+        function updateConversation(conversation) {
+            // Update header info
+            const statusBadge = document.getElementById('statusBadge');
+            const threadInfo = document.getElementById('threadInfo');
+            const endBtn = document.getElementById('endBtn');
+            const discordLink = document.getElementById('discordLink');
+
+            if (conversation.ended) {
+                statusBadge.textContent = 'Ended';
+                statusBadge.className = 'status-badge ended';
+                endBtn.style.display = 'none';
+            } else {
+                statusBadge.textContent = 'Active';
+                statusBadge.className = 'status-badge active';
+                endBtn.style.display = 'inline-block';
+            }
+
+            threadInfo.innerHTML = `
+                Thread: <code>${conversation.threadId}</code><br>
+                User: ${escapeHtml(conversation.originalPoster)}<br>
+                Messages: ${conversation.messageCount}
+            `;
+
+            // Set up Discord link
+            if (guildId) {
+                discordLink.href = `https://discord.com/channels/${guildId}/${threadId}`;
+                discordLink.style.display = 'inline-block';
+            }
+
+            // Update messages
+            const messagesContainer = document.getElementById('messagesContainer');
+            if (!conversation.messages || conversation.messages.length === 0) {
+                messagesContainer.innerHTML = '<div class="empty-state">No messages yet</div>';
+                return;
+            }
+
+            messagesContainer.innerHTML = conversation.messages.map(msg => `
+                <div class="message-item ${msg.role}">
+                    <div class="message-header">
+                        <span class="message-role">${msg.role === 'user' ? 'User' : 'Assistant'}</span>
+                        <span class="message-timestamp">${formatTime(msg.timestamp)}</span>
+                    </div>
+                    <div class="message-content">${escapeHtml(msg.content)}</div>
+                </div>
+            `).join('');
+
+            // Auto-scroll to bottom
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        async function endConversation() {
+            if (!confirm('Are you sure you want to end this conversation?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/conversations/${threadId}/end`, {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    alert('Conversation ended successfully');
+                    fetchConversation();
+                } else {
+                    alert('Failed to end conversation');
+                }
+            } catch (error) {
+                console.error('Error ending conversation:', error);
+                alert('Failed to end conversation');
+            }
+        }
+
+        function formatTime(timestamp) {
+            const date = new Date(timestamp);
+            const now = new Date();
+            const diff = now - date;
+
+            if (diff < 60000) return 'Just now';
+            if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+            if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+
+            return date.toLocaleString();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Theme toggle functionality
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('dashboard-theme') || 'dark';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('dashboard-theme', newTheme);
+        }
+
+        // Initialize theme on load
+        loadTheme();
+    </script>
+</body>
+</html>

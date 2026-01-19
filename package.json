@@ -9,14 +9,21 @@
     "dev": "node --watch src/index.js",
     "register-commands": "node src/registerCommands.js"
   },
-  "keywords": ["discord", "bot", "support", "ai", "claude"],
+  "keywords": [
+    "discord",
+    "bot",
+    "support",
+    "ai",
+    "claude"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "discord.js": "^14.14.1",
     "@anthropic-ai/sdk": "^0.32.1",
+    "discord.js": "^14.14.1",
     "dotenv": "^16.4.5",
     "express": "^4.18.2",
+    "multer": "^2.0.2",
     "ws": "^8.16.0"
   }
 }

@@ -4,6 +4,10 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import http from 'http';
 import fs from 'fs';
+import multer from 'multer';
+import path from 'path';
+import docsManager from '../utils/docsManager.js';
+import ConfigManager from '../utils/configManager.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -20,6 +24,7 @@ export class DashboardServer {
     this.maxErrors = 100;
     this.feedbackData = [];
     this.feedbackFile = join(process.cwd(), 'data', 'feedback.json');
+    this.configManager = new ConfigManager();
 
     this.loadFeedback();
     this.setupRoutes();
@@ -301,6 +306,378 @@ export class DashboardServer {
         res.status(500).send('Internal server error');
       }
     });
+
+    // ===== DOCUMENTATION MANAGEMENT ENDPOINTS =====
+
+    // Configure multer for file uploads
+    const upload = multer({
+      storage: multer.memoryStorage(),
+      fileFilter: (req, file, cb) => {
+        // Only allow markdown and text files
+        if (file.mimetype === 'text/markdown' ||
+            file.mimetype === 'text/plain' ||
+            file.originalname.endsWith('.md') ||
+            file.originalname.endsWith('.txt')) {
+          cb(null, true);
+        } else {
+          cb(new Error('Only .md and .txt files are allowed'));
+        }
+      },
+      limits: {
+        fileSize: 5 * 1024 * 1024 // 5MB limit
+      }
+    });
+
+    // API endpoint to list all documentation files
+    this.app.get('/api/docs', (req, res) => {
+      try {
+        const docsPath = path.join(process.cwd(), 'docs');
+        const structure = this.getDocsStructure(docsPath);
+        res.json(structure);
+      } catch (error) {
+        console.error('Error listing docs:', error);
+        res.status(500).send('Internal server error');
+      }
+    });
+
+    // API endpoint to get documentation stats
+    this.app.get('/api/docs/stats', (req, res) => {
+      try {
+        const stats = docsManager.getStats();
+        res.json(stats);
+      } catch (error) {
+        console.error('Error getting docs stats:', error);
+        res.status(500).send('Internal server error');
+      }
+    });
+
+    // API endpoint to get a specific doc file
+    this.app.get('/api/docs/file', (req, res) => {
+      try {
+        const filePath = req.query.path;
+
+        if (!filePath) {
+          return res.status(400).send('path parameter is required');
+        }
+
+        // Security: Prevent directory traversal
+        const docsPath = path.join(process.cwd(), 'docs');
+        const fullPath = path.join(docsPath, filePath);
+
+        if (!fullPath.startsWith(docsPath)) {
+          return res.status(403).send('Access denied');
+        }
+
+        if (!fs.existsSync(fullPath)) {
+          return res.status(404).send('File not found');
+        }
+
+        const content = fs.readFileSync(fullPath, 'utf8');
+        const stats = fs.statSync(fullPath);
+
+        res.json({
+          path: filePath,
+          content,
+          size: stats.size,
+          modified: stats.mtime,
+          created: stats.birthtime
+        });
+      } catch (error) {
+        console.error('Error reading doc file:', error);
+        res.status(500).send('Internal server error');
+      }
+    });
+
+    // API endpoint to create or upload a new doc file
+    this.app.post('/api/docs/file', upload.single('file'), (req, res) => {
+      try {
+        let filePath, content;
+
+        if (req.file) {
+          // File upload
+          filePath = req.body.path || req.file.originalname;
+          content = req.file.buffer.toString('utf8');
+        } else {
+          // JSON body with path and content
+          filePath = req.body.path;
+          content = req.body.content;
+        }
+
+        if (!filePath || !content) {
+          return res.status(400).send('path and content are required');
+        }
+
+        // Security: Prevent directory traversal
+        const docsPath = path.join(process.cwd(), 'docs');
+        const fullPath = path.join(docsPath, filePath);
+
+        if (!fullPath.startsWith(docsPath)) {
+          return res.status(403).send('Access denied');
+        }
+
+        // Create directory if it doesn't exist
+        const dir = path.dirname(fullPath);
+        if (!fs.existsSync(dir)) {
+          fs.mkdirSync(dir, { recursive: true });
+        }
+
+        // Check if file already exists
+        if (fs.existsSync(fullPath)) {
+          return res.status(409).send('File already exists. Use PUT to update.');
+        }
+
+        // Write file
+        fs.writeFileSync(fullPath, content, 'utf8');
+
+        // Reload docs
+        docsManager.reloadDocs();
+
+        res.json({
+          success: true,
+          message: 'File created successfully',
+          path: filePath
+        });
+      } catch (error) {
+        console.error('Error creating doc file:', error);
+        res.status(500).send('Internal server error');
+      }
+    });
+
+    // API endpoint to update an existing doc file
+    this.app.put('/api/docs/file', (req, res) => {
+      try {
+        const { path: filePath, content } = req.body;
+
+        if (!filePath || content === undefined) {
+          return res.status(400).send('path and content are required');
+        }
+
+        // Security: Prevent directory traversal
+        const docsPath = path.join(process.cwd(), 'docs');
+        const fullPath = path.join(docsPath, filePath);
+
+        if (!fullPath.startsWith(docsPath)) {
+          return res.status(403).send('Access denied');
+        }
+
+        if (!fs.existsSync(fullPath)) {
+          return res.status(404).send('File not found');
+        }
+
+        // Write file
+        fs.writeFileSync(fullPath, content, 'utf8');
+
+        // Reload docs
+        docsManager.reloadDocs();
+
+        res.json({
+          success: true,
+          message: 'File updated successfully',
+          path: filePath
+        });
+      } catch (error) {
+        console.error('Error updating doc file:', error);
+        res.status(500).send('Internal server error');
+      }
+    });
+
+    // API endpoint to delete a doc file
+    this.app.delete('/api/docs/file', (req, res) => {
+      try {
+        const filePath = req.query.path;
+
+        if (!filePath) {
+          return res.status(400).send('path parameter is required');
+        }
+
+        // Security: Prevent directory traversal
+        const docsPath = path.join(process.cwd(), 'docs');
+        const fullPath = path.join(docsPath, filePath);
+
+        if (!fullPath.startsWith(docsPath)) {
+          return res.status(403).send('Access denied');
+        }
+
+        if (!fs.existsSync(fullPath)) {
+          return res.status(404).send('File not found');
+        }
+
+        // Delete file
+        fs.unlinkSync(fullPath);
+
+        // Reload docs
+        docsManager.reloadDocs();
+
+        res.json({
+          success: true,
+          message: 'File deleted successfully',
+          path: filePath
+        });
+      } catch (error) {
+        console.error('Error deleting doc file:', error);
+        res.status(500).send('Internal server error');
+      }
+    });
+
+    // API endpoint to reload all docs
+    this.app.post('/api/docs/reload', (req, res) => {
+      try {
+        docsManager.reloadDocs();
+        const stats = docsManager.getStats();
+
+        res.json({
+          success: true,
+          message: 'Documentation reloaded successfully',
+          stats
+        });
+      } catch (error) {
+        console.error('Error reloading docs:', error);
+        res.status(500).send('Internal server error');
+      }
+    });
+
+    // ===== CONFIGURATION MANAGEMENT ENDPOINTS =====
+
+    // API endpoint to get configuration schema
+    this.app.get('/api/config/schema', (req, res) => {
+      try {
+        const schema = this.configManager.getSchema();
+        res.json(schema);
+      } catch (error) {
+        console.error('Error getting config schema:', error);
+        res.status(500).send('Internal server error');
+      }
+    });
+
+    // API endpoint to get current configuration
+    this.app.get('/api/config', (req, res) => {
+      try {
+        const config = this.configManager.readConfig();
+
+        if (config.error) {
+          return res.status(404).json(config);
+        }
+
+        // Mask sensitive values
+        for (const [key, data] of Object.entries(config)) {
+          if (data.sensitive && data.value) {
+            config[key].value = '********';
+            config[key].masked = true;
+          }
+        }
+
+        res.json(config);
+      } catch (error) {
+        console.error('Error getting config:', error);
+        res.status(500).send('Internal server error');
+      }
+    });
+
+    // API endpoint to get configuration by category
+    this.app.get('/api/config/categorized', (req, res) => {
+      try {
+        const config = this.configManager.getConfigByCategory();
+
+        if (config.error) {
+          return res.status(404).json(config);
+        }
+
+        // Mask sensitive values
+        for (const category of Object.values(config)) {
+          for (const [key, data] of Object.entries(category)) {
+            if (data.sensitive && data.value) {
+              category[key].value = '********';
+              category[key].masked = true;
+            }
+          }
+        }
+
+        res.json(config);
+      } catch (error) {
+        console.error('Error getting categorized config:', error);
+        res.status(500).send('Internal server error');
+      }
+    });
+
+    // API endpoint to update configuration
+    this.app.put('/api/config', (req, res) => {
+      try {
+        const updates = req.body;
+
+        if (!updates || typeof updates !== 'object') {
+          return res.status(400).send('Invalid request body');
+        }
+
+        const result = this.configManager.updateConfig(updates);
+
+        if (!result.success) {
+          return res.status(400).json(result);
+        }
+
+        // Note: Configuration changes require bot restart to take effect
+        res.json({
+          ...result,
+          warning: 'Configuration updated. Bot restart required for changes to take effect.'
+        });
+      } catch (error) {
+        console.error('Error updating config:', error);
+        res.status(500).send('Internal server error');
+      }
+    });
+
+    // API endpoint to validate configuration
+    this.app.post('/api/config/validate', (req, res) => {
+      try {
+        const validation = this.configManager.validateEnvFile();
+        res.json(validation);
+      } catch (error) {
+        console.error('Error validating config:', error);
+        res.status(500).send('Internal server error');
+      }
+    });
+
+    // API endpoint to get system prompt
+    this.app.get('/api/config/system-prompt', (req, res) => {
+      try {
+        // Get the current system prompt from the AI service
+        if (!this.bot.aiService) {
+          return res.status(500).send('AI service not initialized');
+        }
+
+        const systemPrompt = this.bot.aiService.systemPrompt;
+        res.json({ systemPrompt });
+      } catch (error) {
+        console.error('Error getting system prompt:', error);
+        res.status(500).send('Internal server error');
+      }
+    });
+
+    // API endpoint to update system prompt
+    this.app.put('/api/config/system-prompt', (req, res) => {
+      try {
+        const { systemPrompt } = req.body;
+
+        if (!systemPrompt || typeof systemPrompt !== 'string') {
+          return res.status(400).send('systemPrompt is required and must be a string');
+        }
+
+        // Update the system prompt in the AI service
+        if (!this.bot.aiService) {
+          return res.status(500).send('AI service not initialized');
+        }
+
+        this.bot.aiService.systemPrompt = systemPrompt;
+
+        res.json({
+          success: true,
+          message: 'System prompt updated successfully',
+          warning: 'This change is temporary. To persist, modify the buildSystemPrompt() method in aiService.js'
+        });
+      } catch (error) {
+        console.error('Error updating system prompt:', error);
+        res.status(500).send('Internal server error');
+      }
+    });
   }
 
   setupWebSocket() {
@@ -469,6 +846,44 @@ export class DashboardServer {
     }
 
     return dailyData;
+  }
+
+  getDocsStructure(dir, basePath = '') {
+    const items = [];
+
+    try {
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+
+      for (const entry of entries) {
+        const fullPath = path.join(dir, entry.name);
+        const relativePath = basePath ? `${basePath}/${entry.name}` : entry.name;
+
+        if (entry.isDirectory()) {
+          // Recursively get subdirectory structure
+          const children = this.getDocsStructure(fullPath, relativePath);
+          items.push({
+            name: entry.name,
+            path: relativePath,
+            type: 'directory',
+            children
+          });
+        } else if (entry.name.endsWith('.md') || entry.name.endsWith('.txt')) {
+          // File entry
+          const stats = fs.statSync(fullPath);
+          items.push({
+            name: entry.name,
+            path: relativePath,
+            type: 'file',
+            size: stats.size,
+            modified: stats.mtime
+          });
+        }
+      }
+    } catch (error) {
+      console.error(`Error reading directory ${dir}:`, error);
+    }
+
+    return items;
   }
 
   broadcast(message) {

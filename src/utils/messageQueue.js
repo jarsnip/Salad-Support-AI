@@ -1,7 +1,7 @@
 class MessageQueue {
   constructor(processingFunction, concurrentLimit = 3) {
     this.queue = [];
-    this.processing = new Set();
+    this.processing = new Set(); // Now stores threadId strings, not objects
     this.processingFunction = processingFunction;
     this.concurrentLimit = concurrentLimit;
   }
@@ -14,7 +14,8 @@ class MessageQueue {
       return;
     }
 
-    if (Array.from(this.processing).some(p => p.threadId === item.threadId)) {
+    // Fixed: Check Set by threadId string, not object reference
+    if (this.processing.has(item.threadId)) {
       console.log(`Thread ${item.threadId} currently processing, skipping duplicate`);
       return;
     }
@@ -32,11 +33,20 @@ class MessageQueue {
   async processQueue() {
     while (this.queue.length > 0 && this.processing.size < this.concurrentLimit) {
       const item = this.queue.shift();
+      if (!item) continue; // Safety check
 
-      this.processing.add(item);
+      // Fixed: Add threadId string to Set, not entire object
+      this.processing.add(item.threadId);
 
       this.processItem(item).finally(() => {
-        this.processing.delete(item);
+        // Fixed: Delete by threadId string
+        this.processing.delete(item.threadId);
+
+        // Clear typing indicator if present
+        if (item.typingInterval) {
+          clearInterval(item.typingInterval);
+        }
+
         this.processQueue();
       });
     }

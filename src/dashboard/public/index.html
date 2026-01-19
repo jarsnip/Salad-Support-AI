@@ -2069,11 +2069,12 @@
 
             conversationsDiv.innerHTML = activeConversations.map(conv => {
                 const discordLink = guildId ? `https://discord.com/channels/${guildId}/${conv.threadId}` : null;
+                const safeThreadId = String(conv.threadId || 'unknown');
                 return `
                     <div class="conversation-item">
                         <div class="conversation-header">
-                            <span class="thread-id">Thread: ${conv.threadId}</span>
-                            <span class="message-count">${conv.messageCount} messages</span>
+                            <span class="thread-id">Thread: ${safeThreadId}</span>
+                            <span class="transcript-badge">${conv.messageCount} messages</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px;">
                             <div style="color: #8b9eff; font-weight: 500; font-size: 0.9em;">

@@ -381,11 +381,12 @@ export class DashboardServer {
           return res.status(400).send('path parameter is required');
         }
 
-        // Security: Prevent directory traversal
-        const docsPath = path.join(process.cwd(), 'docs');
-        const fullPath = path.join(docsPath, filePath);
+        // Security: Prevent directory traversal with normalized paths
+        const docsPath = path.resolve(process.cwd(), 'docs');
+        const fullPath = path.resolve(docsPath, filePath);
 
-        if (!fullPath.startsWith(docsPath)) {
+        // Check that resolved path is still within docs directory
+        if (!fullPath.startsWith(docsPath + path.sep) && fullPath !== docsPath) {
           return res.status(403).send('Access denied');
         }
 
@@ -428,11 +429,12 @@ export class DashboardServer {
           return res.status(400).send('path and content are required');
         }
 
-        // Security: Prevent directory traversal
-        const docsPath = path.join(process.cwd(), 'docs');
-        const fullPath = path.join(docsPath, filePath);
+        // Security: Prevent directory traversal with normalized paths
+        const docsPath = path.resolve(process.cwd(), 'docs');
+        const fullPath = path.resolve(docsPath, filePath);
 
-        if (!fullPath.startsWith(docsPath)) {
+        // Check that resolved path is still within docs directory
+        if (!fullPath.startsWith(docsPath + path.sep) && fullPath !== docsPath) {
           return res.status(403).send('Access denied');
         }
 
@@ -473,11 +475,12 @@ export class DashboardServer {
           return res.status(400).send('path and content are required');
         }
 
-        // Security: Prevent directory traversal
-        const docsPath = path.join(process.cwd(), 'docs');
-        const fullPath = path.join(docsPath, filePath);
+        // Security: Prevent directory traversal with normalized paths
+        const docsPath = path.resolve(process.cwd(), 'docs');
+        const fullPath = path.resolve(docsPath, filePath);
 
-        if (!fullPath.startsWith(docsPath)) {
+        // Check that resolved path is still within docs directory
+        if (!fullPath.startsWith(docsPath + path.sep) && fullPath !== docsPath) {
           return res.status(403).send('Access denied');
         }
 
@@ -511,11 +514,12 @@ export class DashboardServer {
           return res.status(400).send('path parameter is required');
         }
 
-        // Security: Prevent directory traversal
-        const docsPath = path.join(process.cwd(), 'docs');
-        const fullPath = path.join(docsPath, filePath);
+        // Security: Prevent directory traversal with normalized paths
+        const docsPath = path.resolve(process.cwd(), 'docs');
+        const fullPath = path.resolve(docsPath, filePath);
 
-        if (!fullPath.startsWith(docsPath)) {
+        // Check that resolved path is still within docs directory
+        if (!fullPath.startsWith(docsPath + path.sep) && fullPath !== docsPath) {
           return res.status(403).send('Access denied');
         }
 
@@ -787,8 +791,11 @@ export class DashboardServer {
   }
 
   getConversationsData() {
+    // Create snapshot to avoid iterating over Map being modified concurrently
+    const snapshot = Array.from(this.bot.conversationManager.conversations.entries());
+
     const conversations = [];
-    for (const [threadId, conversation] of this.bot.conversationManager.conversations.entries()) {
+    for (const [threadId, conversation] of snapshot) {
       // Ensure threadId is a string (defensive coding)
       const threadIdString = String(threadId);
 

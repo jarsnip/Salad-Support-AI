@@ -26,7 +26,16 @@ class SpamFilter {
     this.loadBlacklist();
 
     // Cleanup old data every 5 minutes
-    setInterval(() => this.cleanup(), 5 * 60 * 1000);
+    // Store interval reference for cleanup
+    this.cleanupInterval = setInterval(() => this.cleanup(), 5 * 60 * 1000);
+  }
+
+  // Method to stop spam filter and clean up resources
+  stop() {
+    if (this.cleanupInterval) {
+      clearInterval(this.cleanupInterval);
+      this.cleanupInterval = null;
+    }
   }
 
   loadBlacklist() {

@@ -50,13 +50,16 @@ const database = new MultiTenantDB();
 console.log('✅ Multi-tenant database initialized');
 
 // Initialize Discord OAuth
-const oauthRedirectUri = `${config.dashboardUrl}/auth/callback`;
+// Remove trailing slash from dashboardUrl if present
+const dashboardUrlClean = config.dashboardUrl.replace(/\/$/, '');
+const oauthRedirectUri = `${dashboardUrlClean}/auth/callback`;
 const oauth = new DiscordOAuth(
   config.discordClientId,
   config.discordClientSecret,
   oauthRedirectUri
 );
 console.log('✅ Discord OAuth initialized');
+console.log(`✅ OAuth Redirect URI: ${oauthRedirectUri}`);
 
 // Initialize bot and dashboard with database and OAuth
 const bot = new SupportBot(config, database);

@@ -7,10 +7,11 @@ class ConversationManager {
     this.transcriptManager = new TranscriptManager();
   }
 
-  getConversation(threadId) {
+  getConversation(threadId, guildId = null) {
     if (!this.conversations.has(threadId)) {
       this.conversations.set(threadId, {
         threadId,
+        guildId,
         messages: [],
         createdAt: Date.now(),
         lastActivity: Date.now(),
@@ -148,12 +149,29 @@ class ConversationManager {
     }
   }
 
-  getStats() {
+  getStats(guildId = null) {
+    let conversations = Array.from(this.conversations.values());
+
+    // Filter by guild if specified
+    if (guildId) {
+      conversations = conversations.filter(conv => conv.guildId === guildId);
+    }
+
     return {
-      activeConversations: this.conversations.size,
-      totalMessages: Array.from(this.conversations.values())
-        .reduce((sum, conv) => sum + conv.messages.length, 0)
+      activeConversations: conversations.length,
+      totalMessages: conversations.reduce((sum, conv) => sum + conv.messages.length, 0)
     };
+  }
+
+  // Get conversations for a specific guild
+  getGuildConversations(guildId) {
+    const conversations = [];
+    for (const [threadId, conversation] of this.conversations) {
+      if (conversation.guildId === guildId) {
+        conversations.push(conversation);
+      }
+    }
+    return conversations;
   }
 
   generateHTMLTranscript(threadIdOrConversation) {
@@ -477,8 +495,8 @@ class ConversationManager {
     return this.transcriptManager.getTranscript(threadId);
   }
 
-  listTranscripts(limit, offset) {
-    return this.transcriptManager.listTranscripts(limit, offset);
+  listTranscripts(limit, offset, guildId = null) {
+    return this.transcriptManager.listTranscripts(limit, offset, guildId);
   }
 
   searchTranscripts(query, limit) {

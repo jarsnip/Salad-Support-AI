@@ -1,26 +1,23 @@
 import Anthropic from '@anthropic-ai/sdk';
 import docsManager from '../utils/docsManager.js';
-import configPersistence from '../utils/configPersistence.js';
 
 class AIService {
-  constructor(apiKey, model = 'claude-haiku-4-5-20251001') {
-    this.client = new Anthropic({
-      apiKey: apiKey
-    });
+  constructor(apiKey = null, model = 'claude-sonnet-4-20250514') {
     this.model = model;
-    this.systemPrompt = this.loadSystemPrompt();
+    this.clients = new Map(); // Cache clients per API key
   }
 
-  loadSystemPrompt() {
-    // Try to load custom prompt from persistent config
-    const customPrompt = configPersistence.getSystemPrompt();
-    if (customPrompt) {
-      console.log('✅ Using custom system prompt from config.json');
-      return customPrompt;
+  // Get or create Anthropic client for a specific API key
+  getClient(apiKey) {
+    if (!apiKey) {
+      throw new Error('API key is required');
     }
-    // Fall back to default
-    console.log('✅ Using default system prompt');
-    return this.buildDefaultSystemPrompt();
+
+    if (!this.clients.has(apiKey)) {
+      this.clients.set(apiKey, new Anthropic({ apiKey }));
+    }
+
+    return this.clients.get(apiKey);
   }
 
   buildDefaultSystemPrompt() {
@@ -47,17 +44,23 @@ RESPONSE STYLE:
 Answer questions using the documentation context below.`;
   }
 
-  async generateResponse(messages, conversationContext = '') {
+  async generateResponse(messages, conversationContext = '', apiKey, customSystemPrompt = null) {
     try {
+      // Get client for this API key
+      const client = this.getClient(apiKey);
+
+      // Use custom system prompt or default
+      const systemPrompt = customSystemPrompt || this.buildDefaultSystemPrompt();
+
       // OPTIMIZED: Use smart context retrieval instead of loading ALL docs
       const lastUserMessage = messages[messages.length - 1]?.content || '';
       const docsContext = docsManager.getRelevantDocsAsContext(lastUserMessage);
 
-      const enhancedSystemPrompt = `${this.systemPrompt}
+      const enhancedSystemPrompt = `${systemPrompt}
 
 ${docsContext}`;
 
-      const response = await this.client.messages.create({
+      const response = await client.messages.create({
         model: this.model,
         max_tokens: 1024,
         system: enhancedSystemPrompt,

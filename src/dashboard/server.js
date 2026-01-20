@@ -17,9 +17,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 export class DashboardServer {
-  constructor(bot, port = 3000) {
+  constructor(bot, config, database, oauth) {
     this.bot = bot;
-    this.port = port;
+    this.config = config;
+    this.database = database;
+    this.oauth = oauth;
+    this.port = config.dashboardPort;
     this.app = express();
     this.server = http.createServer(this.app);
     this.wss = new WebSocketServer({ server: this.server });
@@ -29,15 +32,6 @@ export class DashboardServer {
     this.feedbackData = [];
     this.feedbackFile = join(process.cwd(), 'data', 'feedback.json');
     this.configManager = new ConfigManager();
-
-    // Authentication
-    this.dashboardPassword = process.env.DASHBOARD_PASSWORD || null;
-    this.sessionTokens = new Map(); // token -> { expires, rememberDevice }
-    this.tokenExpiry = 30 * 24 * 60 * 60 * 1000; // 30 days for remember device
-
-    if (!this.dashboardPassword) {
-      console.warn('⚠️  No DASHBOARD_PASSWORD set. Dashboard will be publicly accessible!');
-    }
 
     this.loadFeedback();
     this.setupRoutes();
@@ -50,51 +44,66 @@ export class DashboardServer {
     this.app.use(express.json());
     this.app.use(cookieParser());
 
-    // ==== AUTHENTICATION ROUTES (PUBLIC) ====
+    // ==== DISCORD OAUTH ROUTES (PUBLIC) ====
 
-    // Serve login page
-    this.app.get('/login', (req, res) => {
-      res.sendFile(join(__dirname, 'public', 'login.html'));
+    // Redirect to Discord OAuth
+    this.app.get('/auth/discord', (req, res) => {
+      const { url, state } = this.oauth.getAuthorizationUrl();
+      // Store state in cookie for verification
+      res.cookie('oauth_state', state, {
+        httpOnly: true,
+        maxAge: 5 * 60 * 1000, // 5 minutes
+        sameSite: 'lax'
+      });
+      res.redirect(url);
     });
 
-    // Login endpoint
-    this.app.post('/auth/login', (req, res) => {
-      const { password, rememberDevice } = req.body;
+    // OAuth callback
+    this.app.get('/auth/callback', async (req, res) => {
+      try {
+        const { code, state } = req.query;
+        const storedState = req.cookies.oauth_state;
 
-      // If no password is set, allow access
-      if (!this.dashboardPassword) {
-        const token = this.generateSessionToken();
-        const expires = Date.now() + (rememberDevice ? this.tokenExpiry : 24 * 60 * 60 * 1000);
+        // Verify state to prevent CSRF
+        if (!state || state !== storedState) {
+          return res.status(400).send('Invalid state parameter');
+        }
 
-        this.sessionTokens.set(token, { expires, rememberDevice: !!rememberDevice });
+        // Clear state cookie
+        res.clearCookie('oauth_state');
 
-        res.cookie('dashboard_session', token, {
-          httpOnly: true,
-          maxAge: rememberDevice ? this.tokenExpiry : 24 * 60 * 60 * 1000,
-          sameSite: 'strict'
+        // Exchange code for tokens
+        const tokenData = await this.oauth.exchangeCode(code);
+
+        // Get user info
+        const user = await this.oauth.getUser(tokenData.access_token);
+
+        // Save user to database
+        this.database.upsertUser({
+          id: user.id,
+          username: user.username,
+          discriminator: user.discriminator,
+          avatar: user.avatar,
+          access_token: tokenData.access_token,
+          refresh_token: tokenData.refresh_token,
+          token_expires_at: Date.now() + (tokenData.expires_in * 1000)
         });
 
-        return res.json({ success: true });
-      }
+        // Create session
+        const { sessionToken, expiresAt } = this.oauth.createSession(user.id);
 
-      // Check password
-      if (password === this.dashboardPassword) {
-        // Generate session token
-        const token = this.generateSessionToken();
-        const expires = Date.now() + (rememberDevice ? this.tokenExpiry : 24 * 60 * 60 * 1000);
-
-        this.sessionTokens.set(token, { expires, rememberDevice: !!rememberDevice });
-
-        // Set cookie
-        res.cookie('dashboard_session', token, {
+        // Set session cookie
+        res.cookie('dashboard_session', sessionToken, {
           httpOnly: true,
-          maxAge: rememberDevice ? this.tokenExpiry : 24 * 60 * 60 * 1000,
-          sameSite: 'strict'
+          maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+          sameSite: 'lax'
         });
 
-        return res.json({ success: true });
-      } else {
-        return res.status(401).json({ error: 'Invalid password' });
+        // Redirect to server selection
+        res.redirect('/servers');
+      } catch (error) {
+        console.error('OAuth callback error:', error);
+        res.status(500).send('Authentication failed');
       }
     });
 
@@ -102,54 +111,230 @@ export class DashboardServer {
     this.app.post('/auth/logout', (req, res) => {
       const token = req.cookies.dashboard_session;
       if (token) {
-        this.sessionTokens.delete(token);
+        this.oauth.destroySession(token);
+        res.clearCookie('dashboard_session');
       }
-      res.clearCookie('dashboard_session');
       res.json({ success: true });
     });
 
-    // ==== PROTECTED ROUTES (REQUIRE AUTH) ====
+    // ==== AUTHENTICATION MIDDLEWARE ====
 
-    // Authentication middleware for all other routes
-    this.app.use((req, res, next) => {
-      // Skip auth for static files (CSS, JS, images)
+    // Authentication middleware for protected routes
+    const requireAuth = (req, res, next) => {
+      // Skip auth for static files
       if (req.path.match(/\.(css|js|png|jpg|jpeg|gif|svg|ico|woff|woff2|ttf|eot)$/)) {
         return next();
       }
 
-      // Skip auth if no password is set
-      if (!this.dashboardPassword) {
-        return next();
-      }
-
-      // Check session token
       const token = req.cookies.dashboard_session;
 
-      if (!token || !this.sessionTokens.has(token)) {
-        return res.redirect('/login');
+      if (!token) {
+        if (req.path.startsWith('/api/')) {
+          return res.status(401).json({ error: 'Not authenticated' });
+        }
+        return res.redirect('/auth/discord');
       }
 
-      const session = this.sessionTokens.get(token);
+      const session = this.oauth.validateSession(token);
 
-      // Check if token is expired
-      if (Date.now() > session.expires) {
-        this.sessionTokens.delete(token);
+      if (!session) {
         res.clearCookie('dashboard_session');
-        return res.redirect('/login');
+        if (req.path.startsWith('/api/')) {
+          return res.status(401).json({ error: 'Session expired' });
+        }
+        return res.redirect('/auth/discord');
       }
 
-      // Token is valid, proceed
+      // Attach user ID to request
+      req.userId = session.userId;
       next();
+    };
+
+    // ==== PUBLIC ROUTES ====
+
+    // Root redirects to Discord login
+    this.app.get('/', (req, res) => {
+      const token = req.cookies.dashboard_session;
+      if (token && this.oauth.validateSession(token)) {
+        return res.redirect('/servers');
+      }
+      res.redirect('/auth/discord');
     });
 
-    // Redirect root to dashboard
-    this.app.get('/', (req, res) => {
-      res.redirect('/dashboard');
+    // ==== PROTECTED ROUTES ====
+
+    // Server selection page
+    this.app.get('/servers', requireAuth, (req, res) => {
+      res.sendFile(join(__dirname, 'public', 'servers.html'));
     });
+
+    // API: Get user's accessible servers
+    this.app.get('/api/servers', requireAuth, async (req, res) => {
+      try {
+        const userId = req.userId;
+        const user = this.database.getUser(userId);
+
+        if (!user) {
+          return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Get bot's guilds
+        const botGuilds = Array.from(this.bot.client.guilds.cache.values()).map(guild => ({
+          id: guild.id,
+          name: guild.name,
+          icon: guild.icon
+        }));
+
+        // Get whitelisted guild IDs
+        const whitelistedServers = this.database.getAllServers().filter(s => s.whitelisted);
+        const whitelistedGuildIds = whitelistedServers.map(s => s.guild_id);
+
+        // Get guilds where user has admin access
+        const accessibleGuilds = await this.oauth.getAdminGuilds(
+          user.access_token,
+          userId,
+          botGuilds,
+          whitelistedGuildIds
+        );
+
+        // Record access for each server
+        for (const guild of accessibleGuilds) {
+          this.database.recordServerAccess(userId, guild.id);
+        }
+
+        res.json({ servers: accessibleGuilds });
+      } catch (error) {
+        console.error('Error getting servers:', error);
+        res.status(500).json({ error: 'Failed to get servers' });
+      }
+    });
+
+    // Dashboard for specific server
+    this.app.get('/dashboard/:guildId', requireAuth, async (req, res) => {
+      try {
+        const { guildId } = req.params;
+        const userId = req.userId;
+
+        // Check if user has access to this server
+        if (!await this.hasServerAccess(userId, guildId)) {
+          return res.status(403).send('Access denied');
+        }
+
+        res.sendFile(join(__dirname, 'public', 'dashboard.html'));
+      } catch (error) {
+        console.error('Error loading dashboard:', error);
+        res.status(500).send('Error loading dashboard');
+      }
+    });
+
+    // ==== SERVER-SPECIFIC API ENDPOINTS ====
+
+    // Get server configuration
+    this.app.get('/api/server/:guildId/config', requireAuth, async (req, res) => {
+      try {
+        const { guildId } = req.params;
+
+        if (!await this.hasServerAccess(req.userId, guildId)) {
+          return res.status(403).json({ error: 'Access denied' });
+        }
+
+        const config = this.database.getServerConfig(guildId);
+        const server = this.database.getServer(guildId);
+
+        res.json({
+          server: {
+            id: guildId,
+            name: server?.guild_name || 'Unknown Server'
+          },
+          config: {
+            anthropic_api_key: config?.anthropic_api_key ? '***' + config.anthropic_api_key.slice(-4) : null,
+            system_prompt: config?.system_prompt || null,
+            ticket_category_name: config?.ticket_category_name || 'Support Tickets'
+          }
+        });
+      } catch (error) {
+        console.error('Error getting server config:', error);
+        res.status(500).json({ error: 'Failed to get configuration' });
+      }
+    });
+
+    // Update server configuration
+    this.app.put('/api/server/:guildId/config', requireAuth, async (req, res) => {
+      try {
+        const { guildId } = req.params;
+
+        if (!await this.hasServerAccess(req.userId, guildId)) {
+          return res.status(403).json({ error: 'Access denied' });
+        }
+
+        const { anthropic_api_key, system_prompt, ticket_category_name } = req.body;
+
+        const updates = {};
+        if (anthropic_api_key !== undefined) updates.anthropic_api_key = anthropic_api_key;
+        if (system_prompt !== undefined) updates.system_prompt = system_prompt;
+        if (ticket_category_name !== undefined) updates.ticket_category_name = ticket_category_name;
+
+        this.database.updateServerConfig(guildId, updates);
+
+        // Invalidate server config cache
+        this.bot.serverConfig.invalidateCache(guildId);
+
+        res.json({ success: true, message: 'Configuration updated successfully' });
+      } catch (error) {
+        console.error('Error updating server config:', error);
+        res.status(500).json({ error: 'Failed to update configuration' });
+      }
+    });
+
+    // Get server stats
+    this.app.get('/api/server/:guildId/stats', requireAuth, async (req, res) => {
+      try {
+        const { guildId } = req.params;
+
+        if (!await this.hasServerAccess(req.userId, guildId)) {
+          return res.status(403).json({ error: 'Access denied' });
+        }
+
+        const convStats = this.bot.conversationManager.getStats(guildId);
+        const transcriptStats = this.bot.conversationManager.getTranscriptStats();
+
+        res.json({
+          activeConversations: convStats.activeConversations,
+          totalMessages: convStats.totalMessages,
+          totalTranscripts: transcriptStats.total
+        });
+      } catch (error) {
+        console.error('Error getting server stats:', error);
+        res.status(500).json({ error: 'Failed to get stats' });
+      }
+    });
+
+    // Get server transcripts
+    this.app.get('/api/server/:guildId/transcripts', requireAuth, async (req, res) => {
+      try {
+        const { guildId } = req.params;
+
+        if (!await this.hasServerAccess(req.userId, guildId)) {
+          return res.status(403).json({ error: 'Access denied' });
+        }
+
+        const limit = parseInt(req.query.limit) || 20;
+        const offset = parseInt(req.query.offset) || 0;
+
+        const result = this.bot.conversationManager.listTranscripts(limit, offset, guildId);
+
+        res.json(result);
+      } catch (error) {
+        console.error('Error getting transcripts:', error);
+        res.status(500).json({ error: 'Failed to get transcripts' });
+      }
+    });
+
+    // ==== LEGACY ROUTES (Redirect to server selection) ====
 
     // Serve dashboard page
     this.app.get('/dashboard', (req, res) => {
-      res.sendFile(join(__dirname, 'public', 'index.html'));
+      res.redirect('/servers');
     });
 
     // Serve static files from public directory (after auth middleware)
@@ -1168,17 +1353,44 @@ export class DashboardServer {
     });
   }
 
-  // Authentication helper methods
-  generateSessionToken() {
-    return crypto.randomBytes(32).toString('hex');
-  }
+  // Authorization helper methods
+  async hasServerAccess(userId, guildId) {
+    const MASTER_USER_ID = '979837953339719721';
 
-  cleanupExpiredSessions() {
-    const now = Date.now();
-    for (const [token, session] of this.sessionTokens.entries()) {
-      if (now > session.expires) {
-        this.sessionTokens.delete(token);
+    // Master user has access to all servers
+    if (userId === MASTER_USER_ID) {
+      return true;
+    }
+
+    const user = this.database.getUser(userId);
+    if (!user) {
+      return false;
+    }
+
+    // Check if server is whitelisted
+    if (!this.database.isServerWhitelisted(guildId)) {
+      return false;
+    }
+
+    // Get bot's guilds
+    const botGuild = this.bot.client.guilds.cache.get(guildId);
+    if (!botGuild) {
+      return false;
+    }
+
+    // Get user's guilds and check admin permission
+    try {
+      const userGuilds = await this.oauth.getUserGuilds(user.access_token);
+      const guild = userGuilds.find(g => g.id === guildId);
+
+      if (!guild) {
+        return false;
       }
+
+      return this.oauth.userHasAdminPermission(guild);
+    } catch (error) {
+      console.error('Error checking server access:', error);
+      return false;
     }
   }
 

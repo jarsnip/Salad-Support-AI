@@ -7,11 +7,13 @@ import ConversationManager from './utils/conversationManager.js';
 import MessageQueue from './utils/messageQueue.js';
 import docsManager from './utils/docsManager.js';
 import SpamFilter from './utils/spamFilter.js';
+import ServerConfigManager from './utils/serverConfigManager.js';
 
 class SupportBot extends EventEmitter {
-  constructor(config) {
+  constructor(config, database) {
     super();
     this.config = config;
+    this.database = database;
     this.client = new Client({
       intents: [
         GatewayIntentBits.Guilds,
@@ -21,7 +23,8 @@ class SupportBot extends EventEmitter {
       ]
     });
 
-    this.aiService = new AIService(config.anthropicApiKey, config.aiModel);
+    this.serverConfig = new ServerConfigManager(database);
+    this.aiService = new AIService(null, config.aiModel); // API key will be per-server
     this.conversationManager = new ConversationManager(config.maxConversationHistory);
     this.spamFilter = new SpamFilter(config.spamFilter);
 
@@ -51,25 +54,31 @@ class SupportBot extends EventEmitter {
   setupEventHandlers() {
     this.client.once('clientReady', () => {
       console.log(`✓ Bot logged in as ${this.client.user.tag}`);
-      console.log(`✓ Monitoring channel: ${this.config.supportChannelId}`);
       console.log(`✓ AI Model: ${this.config.aiModel}`);
+      console.log(`✓ Connected to ${this.client.guilds.cache.size} servers`);
 
       const stats = docsManager.getStats?.() || { docs: docsManager.getAllDocs().length };
       console.log(`✓ Loaded ${docsManager.getAllDocs().length} documentation files`);
-      console.log('\n🤖 Support bot is ready!\n');
+      console.log('\n🤖 Multi-server support bot is ready!\n');
+
+      // Update server names in database
+      this.updateAllServerNames();
     });
 
     this.client.on('messageCreate', async (message) => {
       try {
         if (message.author.bot) return;
+        if (!message.guild) return; // Ignore DMs
 
         if (message.content.trim().startsWith('>')) return;
 
-        if (message.channelId === this.config.supportChannelId && !message.hasThread) {
-          await this.handleSupportMessage(message);
-        }
-        else if (message.channel.isThread()) {
+        // Check if message is in a thread
+        if (message.channel.isThread()) {
           await this.handleThreadMessage(message);
+        }
+        // Check if it's a new support message (not in a thread, bot is mentioned or in designated channel)
+        else if (!message.hasThread && message.mentions.has(this.client.user)) {
+          await this.handleSupportMessage(message);
         }
       } catch (error) {
         console.error('Error handling message:', error);
@@ -97,11 +106,30 @@ class SupportBot extends EventEmitter {
         this.emit('error', error);
       }
     });
+
+    // Handle bot joining a server
+    this.client.on('guildCreate', async (guild) => {
+      await this.handleGuildJoin(guild);
+    });
+
+    // Handle bot leaving a server
+    this.client.on('guildDelete', async (guild) => {
+      await this.handleGuildLeave(guild);
+    });
   }
 
   async handleSupportMessage(message) {
     try {
-      console.log(`\n📩 New support message from ${message.author.tag}: "${message.content.substring(0, 50)}..."`);
+      const guildId = message.guild.id;
+
+      // Check if server is configured with API key
+      if (!this.serverConfig.isServerConfigured(guildId)) {
+        console.log(`⚠️  Server ${message.guild.name} is not configured with an API key`);
+        await message.reply('This server needs to be configured before I can help. Please ask a server administrator to set up the bot via the dashboard.');
+        return;
+      }
+
+      console.log(`\n📩 New support message from ${message.author.tag} in ${message.guild.name}: "${message.content.substring(0, 50)}..."`);
 
       // Check spam filter
       const spamCheck = await this.spamFilter.checkUser(
@@ -158,6 +186,9 @@ class SupportBot extends EventEmitter {
         console.error(`⚠️ Could not set thread permissions: ${permError.message}`);
       }
 
+      // Initialize conversation with guildId
+      this.conversationManager.getConversation(thread.id, guildId);
+
       // Track the original poster
       this.conversationManager.setOriginalPoster(thread.id, message.author.id, message.author.username);
 
@@ -172,6 +203,7 @@ class SupportBot extends EventEmitter {
 
       this.messageQueue.add({
         threadId: thread.id,
+        guildId: guildId,
         messageContent: message.content,
         userId: message.author.id,
         username: message.author.username
@@ -179,6 +211,7 @@ class SupportBot extends EventEmitter {
 
       this.emit('conversationCreated', {
         threadId: thread.id,
+        guildId: guildId,
         username: message.author.username,
         userId: message.author.id,
         initialMessage: message.content,
@@ -198,9 +231,8 @@ class SupportBot extends EventEmitter {
 
   async handleThreadMessage(message) {
     try {
-      const parentChannel = message.channel.parent;
-
-      if (!parentChannel || parentChannel.id !== this.config.supportChannelId) {
+      const guildId = message.guild?.id;
+      if (!guildId) {
         return;
       }
 
@@ -226,6 +258,7 @@ class SupportBot extends EventEmitter {
       // Pass typing interval to queue item so it can be cleared when done
       this.messageQueue.add({
         threadId: message.channel.id,
+        guildId: guildId,
         messageContent: message.content,
         userId: message.author.id,
         username: message.author.username,
@@ -238,7 +271,7 @@ class SupportBot extends EventEmitter {
   }
 
   async processMessage(item) {
-    const { threadId, messageContent, userId, username } = item;
+    const { threadId, messageContent, userId, username, guildId } = item;
 
     try {
       const thread = await this.client.channels.fetch(threadId);
@@ -248,15 +281,33 @@ class SupportBot extends EventEmitter {
         return;
       }
 
+      // Get guild ID from thread if not provided
+      const actualGuildId = guildId || thread.guild?.id;
+      if (!actualGuildId) {
+        console.error(`Could not determine guild ID for thread ${threadId}`);
+        return;
+      }
+
+      // Get per-server API key
+      const apiKey = this.serverConfig.getApiKey(actualGuildId);
+      if (!apiKey) {
+        console.error(`No API key configured for server ${actualGuildId}`);
+        await thread.send('This server is not configured with an API key. Please contact a server administrator.');
+        return;
+      }
+
+      // Get custom system prompt if configured
+      const customSystemPrompt = this.serverConfig.getSystemPrompt(actualGuildId);
+
       this.conversationManager.addMessage(threadId, 'user', messageContent, userId);
 
       const conversationHistory = this.conversationManager.getFormattedHistory(threadId);
 
       const messages = this.conversationManager.getMessagesForAPI(threadId);
 
-      console.log(`🤖 Generating AI response for thread ${threadId}...`);
+      console.log(`🤖 Generating AI response for thread ${threadId} in server ${actualGuildId}...`);
 
-      const response = await this.aiService.generateResponse(messages, conversationHistory);
+      const response = await this.aiService.generateResponse(messages, conversationHistory, apiKey, customSystemPrompt);
 
       this.conversationManager.addMessage(threadId, 'assistant', response);
 
@@ -941,6 +992,67 @@ class SupportBot extends EventEmitter {
     } catch (error) {
       console.error('Error logging initial message:', error);
       // Don't throw - logging failure shouldn't break the bot
+    }
+  }
+
+  async handleGuildJoin(guild) {
+    console.log(`\n🔔 Bot added to server: ${guild.name} (${guild.id})`);
+
+    // Check if server is whitelisted
+    const isWhitelisted = this.database.isServerWhitelisted(guild.id);
+
+    if (!isWhitelisted) {
+      console.log(`⚠️  Server ${guild.name} is NOT whitelisted. Leaving server...`);
+
+      try {
+        // Try to send a message to server owner
+        const owner = await guild.fetchOwner();
+        await owner.send(`Hello! Thank you for adding the support bot to **${guild.name}**.\n\nThis is a private bot that requires authorization. Please contact the bot administrator to get your server whitelisted.\n\nThe bot will now leave your server.`);
+      } catch (error) {
+        console.log('Could not DM server owner:', error.message);
+      }
+
+      // Leave the server
+      await guild.leave();
+      console.log(`👋 Left server: ${guild.name}`);
+      return;
+    }
+
+    // Server is whitelisted, add to database
+    this.database.addServer(guild.id, guild.name, true);
+    console.log(`✅ Server ${guild.name} is whitelisted and added to database`);
+
+    // Emit event for dashboard
+    this.emit('guildJoined', {
+      guildId: guild.id,
+      guildName: guild.name,
+      timestamp: Date.now()
+    });
+  }
+
+  async handleGuildLeave(guild) {
+    console.log(`\n👋 Bot removed from server: ${guild.name} (${guild.id})`);
+
+    // Don't delete server data, just mark as inactive (in case they re-add)
+    // Server data and transcripts are preserved
+
+    // Emit event for dashboard
+    this.emit('guildLeft', {
+      guildId: guild.id,
+      guildName: guild.name,
+      timestamp: Date.now()
+    });
+  }
+
+  async updateAllServerNames() {
+    console.log('\n📝 Updating server names in database...');
+
+    for (const guild of this.client.guilds.cache.values()) {
+      const serverInDb = this.database.getServer(guild.id);
+      if (serverInDb && serverInDb.guild_name !== guild.name) {
+        this.database.updateServerName(guild.id, guild.name);
+        console.log(`Updated server name: ${serverInDb.guild_name} → ${guild.name}`);
+      }
     }
   }
 

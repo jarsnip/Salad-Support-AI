@@ -22,6 +22,7 @@ class TranscriptManager {
     try {
       const transcriptData = {
         threadId: conversation.threadId || 'unknown',
+        guildId: conversation.guildId || null,
         originalPosterId: conversation.originalPosterId,
         originalPosterUsername: conversation.originalPosterUsername,
         createdAt: conversation.createdAt,
@@ -74,11 +75,12 @@ class TranscriptManager {
    * List all transcripts with pagination
    * @param {number} limit - Number of transcripts to return
    * @param {number} offset - Offset for pagination
+   * @param {string} guildId - Optional guild ID to filter by
    * @returns {Array} Array of transcript summaries
    */
-  listTranscripts(limit = 20, offset = 0) {
+  listTranscripts(limit = 20, offset = 0, guildId = null) {
     try {
-      const files = fs.readdirSync(this.transcriptsDir)
+      let files = fs.readdirSync(this.transcriptsDir)
         .filter(file => file.endsWith('.json'))
         .map(file => {
           const filepath = path.join(this.transcriptsDir, file);
@@ -87,6 +89,7 @@ class TranscriptManager {
 
           return {
             threadId: data.threadId,
+            guildId: data.guildId || null,
             username: data.originalPosterUsername || 'Unknown',
             userId: data.originalPosterId,
             messageCount: data.messageCount,
@@ -97,6 +100,11 @@ class TranscriptManager {
           };
         })
         .sort((a, b) => b.endedAt - a.endedAt); // Sort by end time, newest first
+
+      // Filter by guildId if specified
+      if (guildId) {
+        files = files.filter(file => file.guildId === guildId);
+      }
 
       const total = files.length;
       const transcripts = files.slice(offset, offset + limit);

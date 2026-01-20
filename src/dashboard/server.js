@@ -168,6 +168,18 @@ export class DashboardServer {
       res.sendFile(join(__dirname, 'public', 'servers.html'));
     });
 
+    // API: Get current user info
+    this.app.get('/api/user', requireAuth, (req, res) => {
+      const MASTER_USER_ID = '979837953339719721';
+      const user = this.database.getUser(req.userId);
+
+      res.json({
+        id: req.userId,
+        username: user?.username || 'Unknown',
+        isMaster: req.userId === MASTER_USER_ID
+      });
+    });
+
     // API: Get user's accessible servers
     this.app.get('/api/servers', requireAuth, async (req, res) => {
       try {
@@ -327,6 +339,92 @@ export class DashboardServer {
       } catch (error) {
         console.error('Error getting transcripts:', error);
         res.status(500).json({ error: 'Failed to get transcripts' });
+      }
+    });
+
+    // ==== ADMIN ENDPOINTS (Master User Only) ====
+
+    const requireMasterUser = (req, res, next) => {
+      const MASTER_USER_ID = '979837953339719721';
+      if (req.userId !== MASTER_USER_ID) {
+        return res.status(403).json({ error: 'Admin access required' });
+      }
+      next();
+    };
+
+    // Admin panel page
+    this.app.get('/admin', requireAuth, requireMasterUser, (req, res) => {
+      res.sendFile(join(__dirname, 'public', 'admin.html'));
+    });
+
+    // Get all servers (including non-whitelisted)
+    this.app.get('/api/admin/servers', requireAuth, requireMasterUser, (req, res) => {
+      try {
+        // Get all servers from database
+        const dbServers = this.database.getAllServers();
+
+        // Get all servers bot is currently in
+        const botGuilds = Array.from(this.bot.client.guilds.cache.values()).map(guild => ({
+          id: guild.id,
+          name: guild.name,
+          memberCount: guild.memberCount,
+          icon: guild.icon
+        }));
+
+        // Merge data
+        const allServers = botGuilds.map(botGuild => {
+          const dbServer = dbServers.find(s => s.guild_id === botGuild.id);
+          return {
+            id: botGuild.id,
+            name: botGuild.name,
+            memberCount: botGuild.memberCount,
+            icon: botGuild.icon,
+            whitelisted: dbServer?.whitelisted === 1,
+            inDatabase: !!dbServer,
+            addedAt: dbServer?.added_at || null
+          };
+        });
+
+        res.json({ servers: allServers });
+      } catch (error) {
+        console.error('Error getting admin servers:', error);
+        res.status(500).json({ error: 'Failed to get servers' });
+      }
+    });
+
+    // Whitelist a server
+    this.app.post('/api/admin/servers/:guildId/whitelist', requireAuth, requireMasterUser, async (req, res) => {
+      try {
+        const { guildId } = req.params;
+
+        // Get guild from bot
+        const guild = this.bot.client.guilds.cache.get(guildId);
+        if (!guild) {
+          return res.status(404).json({ error: 'Server not found in bot' });
+        }
+
+        // Add or update server in database
+        this.database.addServer(guildId, guild.name, true);
+
+        res.json({ success: true, message: `Server ${guild.name} has been whitelisted` });
+      } catch (error) {
+        console.error('Error whitelisting server:', error);
+        res.status(500).json({ error: 'Failed to whitelist server' });
+      }
+    });
+
+    // Remove server from whitelist
+    this.app.delete('/api/admin/servers/:guildId/whitelist', requireAuth, requireMasterUser, (req, res) => {
+      try {
+        const { guildId } = req.params;
+
+        // Update server to not whitelisted
+        this.database.setServerWhitelist(guildId, false);
+
+        res.json({ success: true, message: 'Server removed from whitelist' });
+      } catch (error) {
+        console.error('Error removing server from whitelist:', error);
+        res.status(500).json({ error: 'Failed to remove server from whitelist' });
       }
     });
 

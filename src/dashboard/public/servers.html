@@ -42,10 +42,15 @@
             opacity: 0.9;
         }
 
-        .logout-btn {
+        .top-buttons {
             position: absolute;
             top: 20px;
             right: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .logout-btn, .admin-btn {
             background: rgba(255, 255, 255, 0.2);
             color: white;
             border: 1px solid rgba(255, 255, 255, 0.3);
@@ -54,10 +59,21 @@
             cursor: pointer;
             font-size: 0.9em;
             transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
         }
 
-        .logout-btn:hover {
+        .logout-btn:hover, .admin-btn:hover {
             background: rgba(255, 255, 255, 0.3);
+        }
+
+        .admin-btn {
+            background: rgba(255, 215, 0, 0.3);
+            border-color: rgba(255, 215, 0, 0.5);
+        }
+
+        .admin-btn:hover {
+            background: rgba(255, 215, 0, 0.4);
         }
 
         .search-box {
@@ -197,7 +213,10 @@
     </style>
 </head>
 <body>
-    <button class="logout-btn" onclick="logout()">Logout</button>
+    <div class="top-buttons">
+        <a href="/admin" class="admin-btn" id="adminBtn" style="display: none;">⚙️ Admin Panel</a>
+        <button class="logout-btn" onclick="logout()">Logout</button>
+    </div>
 
     <div class="container">
         <div class="header">
@@ -225,6 +244,20 @@
 
     <script>
         let allServers = [];
+
+        async function loadUserInfo() {
+            try {
+                const response = await fetch('/api/user');
+                if (response.ok) {
+                    const user = await response.json();
+                    if (user.isMaster) {
+                        document.getElementById('adminBtn').style.display = 'inline-block';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading user info:', error);
+            }
+        }
 
         async function loadServers() {
             try {
@@ -340,7 +373,8 @@
             searchServers(e.target.value);
         });
 
-        // Load servers on page load
+        // Load data on page load
+        loadUserInfo();
         loadServers();
     </script>
 </body>

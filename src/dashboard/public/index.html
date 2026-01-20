@@ -1831,14 +1831,19 @@
                 <div class="panel">
                     <div class="panel-header">
                         <h3>🤖 AI System Prompt</h3>
-                        <button class="btn btn-sm btn-primary" onclick="saveSystemPrompt()">
-                            <span>💾 Save Prompt</span>
-                        </button>
+                        <div class="btn-group">
+                            <button class="btn btn-sm btn-primary" onclick="saveSystemPrompt()">
+                                <span>💾 Save Prompt</span>
+                            </button>
+                            <button class="btn btn-sm btn-secondary" onclick="resetSystemPrompt()">
+                                <span>🔄 Reset to Default</span>
+                            </button>
+                        </div>
                     </div>
                     <div class="panel-body">
                         <textarea id="systemPromptEditor" class="config-textarea" placeholder="Loading system prompt..."></textarea>
                         <div class="config-note">
-                            Note: Changes to the system prompt are temporary. To persist, modify the buildSystemPrompt() method in aiService.js
+                            Changes are automatically saved to <code>data/config.json</code> and persist across restarts.
                         </div>
                     </div>
                 </div>
@@ -2910,14 +2915,38 @@
 
                 if (response.ok) {
                     const result = await response.json();
-                    alert(result.message + (result.warning ? '\n\n' + result.warning : ''));
+                    alert('✅ ' + result.message);
                 } else {
                     const error = await response.text();
-                    alert(`Failed to save system prompt: ${error}`);
+                    alert(`❌ Failed to save system prompt: ${error}`);
                 }
             } catch (error) {
                 console.error('Error saving system prompt:', error);
-                alert('Failed to save system prompt');
+                alert('❌ Failed to save system prompt');
+            }
+        }
+
+        async function resetSystemPrompt() {
+            if (!confirm('Are you sure you want to reset the system prompt to default? This will discard your custom prompt.')) {
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/config/system-prompt/reset', {
+                    method: 'POST'
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    document.getElementById('systemPromptEditor').value = result.systemPrompt;
+                    alert('✅ ' + result.message);
+                } else {
+                    const error = await response.text();
+                    alert(`❌ Failed to reset system prompt: ${error}`);
+                }
+            } catch (error) {
+                console.error('Error resetting system prompt:', error);
+                alert('❌ Failed to reset system prompt');
             }
         }
 

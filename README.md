@@ -1,6 +1,8 @@
-# Salad Support AI Bot
+# AI Support Bot for Discord
 
 An intelligent Discord support bot powered by Claude AI that automatically handles support queries using a knowledge base of documentation. Perfect for busy servers that need to handle multiple support requests simultaneously.
+
+This is a generic, self-hosted support bot that you can customize for any Discord community.
 
 ## Features
 
@@ -284,13 +286,23 @@ The dashboard displays:
 
 ## Customizing the AI Behavior
 
-You can customize how the AI responds by editing the system prompt in `src/services/aiService.js`:
+You can customize how the AI responds in two ways:
+
+### 1. Via Dashboard (Recommended)
+
+Access the dashboard at `http://localhost:3000` and go to the **Configuration** tab to edit the system prompt. Changes are saved automatically and persist across restarts.
+
+### 2. Via Code
+
+Edit the default system prompt in `src/services/aiService.js`:
 
 ```javascript
-buildSystemPrompt() {
+buildDefaultSystemPrompt() {
   return `Your custom instructions here...`;
 }
 ```
+
+The dashboard method is preferred as it doesn't require code changes or bot restarts.
 
 ## Architecture
 

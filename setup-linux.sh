@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Salad Support AI - Linux Setup Script
+# AI Support Bot - Linux Setup Script
 # This script automates the setup process for Linux systems
 
 set -e  # Exit on error
 
 echo "================================================"
-echo "  Salad Support AI - Linux Setup"
+echo "  AI Support Bot - Linux Setup"
 echo "================================================"
 echo ""
 

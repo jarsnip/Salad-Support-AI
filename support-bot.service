@@ -1,26 +1,26 @@
 [Unit]
-Description=Salad Support AI Discord Bot
+Description=AI Support Bot Discord Bot
 After=network.target
 
 [Service]
 Type=simple
 User=YOUR_USERNAME
-WorkingDirectory=/path/to/Salad-Support-AI
+WorkingDirectory=/path/to/support-bot
 ExecStart=/usr/bin/node src/index.js
 Restart=always
 RestartSec=10
-StandardOutput=append:/var/log/salad-bot/output.log
-StandardError=append:/var/log/salad-bot/error.log
+StandardOutput=append:/var/log/support-bot/output.log
+StandardError=append:/var/log/support-bot/error.log
 
 # Environment file with secrets
-EnvironmentFile=/path/to/Salad-Support-AI/.env
+EnvironmentFile=/path/to/support-bot/.env
 
 # Security hardening
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/path/to/Salad-Support-AI/data
+ReadWritePaths=/path/to/support-bot/data
 
 [Install]
 WantedBy=multi-user.target

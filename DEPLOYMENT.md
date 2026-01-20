@@ -1,6 +1,6 @@
 # Linux Deployment Guide
 
-This guide covers deploying the Salad Support AI bot on a Linux server for production use.
+This guide covers deploying the AI Support Bot bot on a Linux server for production use.
 
 ## Quick Start
 
@@ -81,9 +81,9 @@ sudo pacman -S git
 ### 3. Create dedicated user (recommended for production)
 
 ```bash
-sudo useradd -r -s /bin/bash -d /opt/salad-bot salad
-sudo mkdir -p /opt/salad-bot
-sudo chown salad:salad /opt/salad-bot
+sudo useradd -r -s /bin/bash -d /opt/support-bot salad
+sudo mkdir -p /opt/support-bot
+sudo chown salad:salad /opt/support-bot
 ```
 
 ## Installation
@@ -91,7 +91,7 @@ sudo chown salad:salad /opt/salad-bot
 ### Option 1: Clone from Git Repository
 
 ```bash
-cd /opt/salad-bot
+cd /opt/support-bot
 sudo -u salad git clone <your-repo-url> .
 sudo -u salad ./setup-linux.sh
 ```
@@ -99,8 +99,8 @@ sudo -u salad ./setup-linux.sh
 ### Option 2: Upload Files Manually
 
 ```bash
-# Upload your files via SCP/SFTP to /opt/salad-bot/
-cd /opt/salad-bot
+# Upload your files via SCP/SFTP to /opt/support-bot/
+cd /opt/support-bot
 sudo chown -R salad:salad .
 sudo -u salad ./setup-linux.sh
 ```
@@ -111,7 +111,7 @@ sudo -u salad ./setup-linux.sh
 
 Edit `.env`:
 ```bash
-sudo -u salad nano /opt/salad-bot/.env
+sudo -u salad nano /opt/support-bot/.env
 ```
 
 Required variables:
@@ -127,14 +127,14 @@ ANTHROPIC_API_KEY=your_api_key_here
 
 Upload your `.md` documentation files:
 ```bash
-sudo -u salad mkdir -p /opt/salad-bot/docs
-sudo -u salad cp your-docs/*.md /opt/salad-bot/docs/
+sudo -u salad mkdir -p /opt/support-bot/docs
+sudo -u salad cp your-docs/*.md /opt/support-bot/docs/
 ```
 
 ### 3. Register Discord Commands
 
 ```bash
-cd /opt/salad-bot
+cd /opt/support-bot
 sudo -u salad npm run register-commands
 ```
 
@@ -144,55 +144,55 @@ sudo -u salad npm run register-commands
 
 **1. Create systemd service:**
 
-Edit `salad-bot.service`:
+Edit `support-bot.service`:
 ```bash
-sudo nano /opt/salad-bot/salad-bot.service
+sudo nano /opt/support-bot/support-bot.service
 ```
 
 Update these fields:
 - `User=salad` (your dedicated user)
-- `WorkingDirectory=/opt/salad-bot` (your install path)
-- `EnvironmentFile=/opt/salad-bot/.env` (your .env path)
-- `ReadWritePaths=/opt/salad-bot/data` (your data path)
+- `WorkingDirectory=/opt/support-bot` (your install path)
+- `EnvironmentFile=/opt/support-bot/.env` (your .env path)
+- `ReadWritePaths=/opt/support-bot/data` (your data path)
 
 **2. Create log directory:**
 ```bash
-sudo mkdir -p /var/log/salad-bot
-sudo chown salad:salad /var/log/salad-bot
+sudo mkdir -p /var/log/support-bot
+sudo chown salad:salad /var/log/support-bot
 ```
 
 **3. Install and enable service:**
 ```bash
-sudo cp /opt/salad-bot/salad-bot.service /etc/systemd/system/
+sudo cp /opt/support-bot/support-bot.service /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable salad-bot
-sudo systemctl start salad-bot
+sudo systemctl enable support-bot
+sudo systemctl start support-bot
 ```
 
 **4. Check status:**
 ```bash
-sudo systemctl status salad-bot
+sudo systemctl status support-bot
 ```
 
 **5. View logs:**
 ```bash
 # Real-time logs
-sudo journalctl -u salad-bot -f
+sudo journalctl -u support-bot -f
 
 # Recent logs
-sudo journalctl -u salad-bot -n 100
+sudo journalctl -u support-bot -n 100
 
 # Log files
-sudo tail -f /var/log/salad-bot/output.log
-sudo tail -f /var/log/salad-bot/error.log
+sudo tail -f /var/log/support-bot/output.log
+sudo tail -f /var/log/support-bot/error.log
 ```
 
 **6. Control service:**
 ```bash
-sudo systemctl stop salad-bot     # Stop
-sudo systemctl start salad-bot    # Start
-sudo systemctl restart salad-bot  # Restart
-sudo systemctl disable salad-bot  # Disable auto-start
+sudo systemctl stop support-bot     # Stop
+sudo systemctl start support-bot    # Start
+sudo systemctl restart support-bot  # Restart
+sudo systemctl disable support-bot  # Disable auto-start
 ```
 
 ### Method 2: PM2 (Alternative)
@@ -204,8 +204,8 @@ sudo npm install -g pm2
 
 **2. Start bot:**
 ```bash
-cd /opt/salad-bot
-sudo -u salad pm2 start src/index.js --name salad-bot
+cd /opt/support-bot
+sudo -u salad pm2 start src/index.js --name support-bot
 ```
 
 **3. Setup auto-start:**
@@ -217,37 +217,37 @@ sudo -u salad pm2 save
 **4. Monitor:**
 ```bash
 pm2 status
-pm2 logs salad-bot
+pm2 logs support-bot
 pm2 monit
 ```
 
 **5. Control:**
 ```bash
-pm2 restart salad-bot
-pm2 stop salad-bot
-pm2 delete salad-bot
+pm2 restart support-bot
+pm2 stop support-bot
+pm2 delete support-bot
 ```
 
 ### Method 3: Screen/Tmux (Development Only)
 
 **Using screen:**
 ```bash
-screen -S salad-bot
-cd /opt/salad-bot
+screen -S support-bot
+cd /opt/support-bot
 npm start
 
 # Detach: Ctrl+A then D
-# Reattach: screen -r salad-bot
+# Reattach: screen -r support-bot
 ```
 
 **Using tmux:**
 ```bash
-tmux new -s salad-bot
-cd /opt/salad-bot
+tmux new -s support-bot
+cd /opt/support-bot
 npm start
 
 # Detach: Ctrl+B then D
-# Reattach: tmux attach -t salad-bot
+# Reattach: tmux attach -t support-bot
 ```
 
 ## Firewall Configuration
@@ -325,23 +325,23 @@ sudo certbot --nginx -d dashboard.yourdomain.com
 
 ```bash
 # If using systemd
-sudo systemctl status salad-bot
+sudo systemctl status support-bot
 
 # If using PM2
-pm2 status salad-bot
+pm2 status support-bot
 ```
 
 ### View Logs
 
 ```bash
 # systemd
-sudo journalctl -u salad-bot -f
+sudo journalctl -u support-bot -f
 
 # PM2
-pm2 logs salad-bot
+pm2 logs support-bot
 
 # Direct log files (if configured)
-tail -f /var/log/salad-bot/output.log
+tail -f /var/log/support-bot/output.log
 ```
 
 ### Web Dashboard
@@ -360,66 +360,66 @@ Features:
 ### Manual Update
 
 ```bash
-cd /opt/salad-bot
+cd /opt/support-bot
 sudo -u salad git pull  # If using git
 sudo -u salad npm install  # Update dependencies
-sudo systemctl restart salad-bot  # Restart service
+sudo systemctl restart support-bot  # Restart service
 ```
 
 ### Automated Updates (optional)
 
-Create update script `/opt/salad-bot/update.sh`:
+Create update script `/opt/support-bot/update.sh`:
 ```bash
 #!/bin/bash
-cd /opt/salad-bot
+cd /opt/support-bot
 git pull
 npm install
-systemctl restart salad-bot
+systemctl restart support-bot
 ```
 
 Schedule with cron:
 ```bash
 sudo crontab -e
-# Add: 0 3 * * * /opt/salad-bot/update.sh >> /var/log/salad-bot/update.log 2>&1
+# Add: 0 3 * * * /opt/support-bot/update.sh >> /var/log/support-bot/update.log 2>&1
 ```
 
 ## Backup
 
 ### Automated Backup Script
 
-Create `/opt/salad-bot/backup.sh`:
+Create `/opt/support-bot/backup.sh`:
 ```bash
 #!/bin/bash
-BACKUP_DIR="/backup/salad-bot"
+BACKUP_DIR="/backup/support-bot"
 DATE=$(date +%Y%m%d_%H%M%S)
 
 mkdir -p $BACKUP_DIR
 
 # Backup data and config
-tar -czf $BACKUP_DIR/salad-bot-$DATE.tar.gz \
-    -C /opt/salad-bot \
+tar -czf $BACKUP_DIR/support-bot-$DATE.tar.gz \
+    -C /opt/support-bot \
     data/ \
     docs/ \
     .env
 
 # Keep only last 7 backups
-find $BACKUP_DIR -name "salad-bot-*.tar.gz" -mtime +7 -delete
+find $BACKUP_DIR -name "support-bot-*.tar.gz" -mtime +7 -delete
 ```
 
 Schedule daily:
 ```bash
-sudo chmod +x /opt/salad-bot/backup.sh
+sudo chmod +x /opt/support-bot/backup.sh
 sudo crontab -e
-# Add: 0 2 * * * /opt/salad-bot/backup.sh
+# Add: 0 2 * * * /opt/support-bot/backup.sh
 ```
 
 ### Restore from Backup
 
 ```bash
-cd /opt/salad-bot
-sudo systemctl stop salad-bot
-sudo -u salad tar -xzf /backup/salad-bot/salad-bot-YYYYMMDD_HHMMSS.tar.gz
-sudo systemctl start salad-bot
+cd /opt/support-bot
+sudo systemctl stop support-bot
+sudo -u salad tar -xzf /backup/support-bot/support-bot-YYYYMMDD_HHMMSS.tar.gz
+sudo systemctl start support-bot
 ```
 
 ## Troubleshooting
@@ -428,16 +428,16 @@ sudo systemctl start salad-bot
 
 ```bash
 # Check logs
-sudo journalctl -u salad-bot -n 50
+sudo journalctl -u support-bot -n 50
 
 # Check permissions
-ls -la /opt/salad-bot/
+ls -la /opt/support-bot/
 
 # Check Node.js
 node --version
 
 # Test manually
-cd /opt/salad-bot
+cd /opt/support-bot
 sudo -u salad npm start
 ```
 
@@ -464,17 +464,17 @@ free -h
 ps aux | grep node
 
 # Restart bot
-sudo systemctl restart salad-bot
+sudo systemctl restart support-bot
 ```
 
 ### Permission errors
 
 ```bash
 # Fix ownership
-sudo chown -R salad:salad /opt/salad-bot
+sudo chown -R salad:salad /opt/support-bot
 
 # Fix data directory permissions
-sudo chmod 755 /opt/salad-bot/data
+sudo chmod 755 /opt/support-bot/data
 ```
 
 ## Security Best Practices
@@ -482,8 +482,8 @@ sudo chmod 755 /opt/salad-bot/data
 1. **Run as non-root user** (created `salad` user above)
 2. **Restrict file permissions**:
    ```bash
-   chmod 600 /opt/salad-bot/.env
-   chmod 755 /opt/salad-bot/data
+   chmod 600 /opt/support-bot/.env
+   chmod 755 /opt/support-bot/data
    ```
 3. **Keep Node.js updated**: `sudo npm install -g n && sudo n lts`
 4. **Use firewall**: Only expose necessary ports
@@ -508,7 +508,7 @@ SPAM_TIME_WINDOW=300000
 
 ### Systemd Resource Limits
 
-Edit `/etc/systemd/system/salad-bot.service`:
+Edit `/etc/systemd/system/support-bot.service`:
 ```ini
 [Service]
 MemoryLimit=1G
@@ -528,15 +528,15 @@ CPUQuota=100%
 
 ```bash
 # Start/Stop/Restart
-sudo systemctl start salad-bot
-sudo systemctl stop salad-bot
-sudo systemctl restart salad-bot
+sudo systemctl start support-bot
+sudo systemctl stop support-bot
+sudo systemctl restart support-bot
 
 # View logs
-sudo journalctl -u salad-bot -f
+sudo journalctl -u support-bot -f
 
 # Update
-cd /opt/salad-bot && git pull && npm install && sudo systemctl restart salad-bot
+cd /opt/support-bot && git pull && npm install && sudo systemctl restart support-bot
 
 # Backup
 tar -czf backup.tar.gz data/ docs/ .env

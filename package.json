@@ -1,7 +1,7 @@
 {
-  "name": "salad-support-ai",
+  "name": "discord-ai-support-bot",
   "version": "1.0.0",
-  "description": "Discord support bot with AI-powered responses using support documentation",
+  "description": "Generic Discord support bot with AI-powered responses using custom documentation",
   "main": "src/index.js",
   "type": "module",
   "scripts": {
